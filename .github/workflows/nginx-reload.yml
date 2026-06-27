@@ -1,0 +1,36 @@
+name: nginx-reload
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref with nginx scripts (branch or tag)'
+        required: false
+        default: main
+
+jobs:
+  nginx:
+    runs-on: ubuntu-latest
+    environment: selenoid-production
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SELENOID_DEPLOY_HOST }}
+          username: ${{ secrets.SELENOID_DEPLOY_USER }}
+          key: ${{ secrets.SELENOID_DEPLOY_KEY }}
+          script: |
+            set -euxo pipefail
+            REPO="qa-guru/selenoid.autotests.cloud"
+            REF="${{ inputs.ref }}"
+            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/nginx-selenoid.conf" -o /tmp/nginx-selenoid.conf
+            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/sync-nginx.sh" -o /tmp/sync-nginx.sh
+            chmod +x /tmp/sync-nginx.sh
+            sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /tmp/sync-nginx.sh
+            sudo ls -la /etc/letsencrypt/live/ 2>/dev/null || true
+            sudo grep ssl_ /etc/nginx/sites-available/selenoid | head -10
+            SERVERNAME="${{ vars.SELENOID_PUBLIC_HOST }}"
+            SERVERNAME="${SERVERNAME:-selenoid.autotests.cloud}"
+            echo | openssl s_client -connect 127.0.0.1:443 -servername "$SERVERNAME" 2>&1 | head -20
