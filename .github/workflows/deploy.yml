@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'cm/hub/UI release tag (e.g. v2.0.9). Empty = default in deploy.sh'
+        description: 'Stack release tag (e.g. v2.1.0). Empty = default in deploy.sh'
         required: false
         default: ''
       ref:

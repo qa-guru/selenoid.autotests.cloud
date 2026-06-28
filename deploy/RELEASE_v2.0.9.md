@@ -54,4 +54,4 @@ SELENOID_VERSION=v2.0.9 SELENOID_UI_VERSION=v2.0.9 ./deploy/deploy.sh
 
 WebDriver Edge: `browserName: msedge` или `MicrosoftEdge`, `browserVersion: 145.0`.
 
-Следующий: [v2.1.0](RELEASE_v2.1.0.md) — деплой на prod в отдельном репозитории.
+Следующий: [v2.1.0](RELEASE_v2.1.0.md) — единая версия стека, prod deploy repo.

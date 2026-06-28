@@ -97,10 +97,10 @@ chmod +x deploy.sh
 ./deploy/remote-update.sh
 ```
 
-Pin версии (опционально, по умолчанию **v2.0.9**):
+Pin версии (опционально, по умолчанию **v2.1.0**):
 
 ```bash
-SELENOID_VERSION=v2.0.9 ./deploy/deploy.sh
+SELENOID_VERSION=v2.1.0 ./deploy/deploy.sh
 ```
 
 ### Проверка

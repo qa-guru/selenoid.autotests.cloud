@@ -25,4 +25,4 @@ Production-деплой публичного Selenoid: **https://selenoid.autote
 
 ## Локальная разработка стека
 
-Исходники hub/UI/cm — git-клоны рядом (`../selenoid`, `../selenoid-ui`, `../cm`). Канонический `browsers.json` — в локальной папке `dev/`; синхронизация сюда: `dev/scripts/sync-cm-browsers.sh` → `deploy/browsers-production.json`.
+Исходники hub/UI/cm и `dev/` — в этой рабочей области рядом (`../selenoid`, `../selenoid-ui`, `../cm`, `../dev`). Канонический `browsers.json` — в `../dev/browsers.json`; синхронизация сюда: `../dev/scripts/sync-cm-browsers.sh` → `deploy/browsers-production.json`.
