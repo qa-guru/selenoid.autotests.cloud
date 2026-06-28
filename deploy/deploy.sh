@@ -195,7 +195,7 @@ echo
 echo "=== smoke: create chrome session ==="
 session_json="$(curl -sS -m 120 -X POST "http://127.0.0.1:4444/wd/hub/session" \
   -H 'Content-Type: application/json' \
-  -d '{"capabilities":{"alwaysMatch":{"browserName":"chrome","browserVersion":"148.0","selenoid:options":{"sessionTimeout":"30s","name":"deploy-smoke"}}}}' || true)"
+  -d '{"capabilities":{"alwaysMatch":{"browserName":"chrome","browserVersion":"148.0","selenoid:options":{"sessionTimeout":"30s","name":"deploy-smoke","enableVNC":true,"enableVideo":true}}}}' || true)"
 if command -v jq >/dev/null; then
   session_id="$(jq -r '.value.sessionId // .sessionId // empty' <<<"$session_json")"
   if [[ -z "$session_id" ]]; then

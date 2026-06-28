@@ -6,7 +6,7 @@
 |------|------------------|
 | `/` (UI) | `https://selenoid.autotests.cloud` |
 | `/wd/hub` | `https://selenoid.autotests.cloud/wd/hub` |
-| `/playwright/` | Create Session в UI или `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1` |
+| `/playwright/` | Create Session в UI или `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?enableVNC=true&enableVideo=true` |
 | `/status` | `https://selenoid.autotests.cloud/status` |
 | `:4445` | прямой hub API для CI |
 
@@ -17,7 +17,7 @@
 | Назначение | URL |
 |------------|-----|
 | Selenium | `https://selenoid.autotests.cloud/wd/hub` |
-| Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1` |
+| Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?enableVNC=true&enableVideo=true` |
 | UI | `https://selenoid.autotests.cloud/` |
 | Status | `https://selenoid.autotests.cloud/status` |
 | Video | `https://selenoid.autotests.cloud/video/` |
@@ -26,7 +26,7 @@
 
 ```bash
 export SELENOID_URL=https://selenoid.autotests.cloud/wd/hub
-export PW_TEST_CONNECT_WS_ENDPOINT=wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1
+export PW_TEST_CONNECT_WS_ENDPOINT=wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?enableVNC=true&enableVideo=true
 export SELENOID_HOST=selenoid.autotests.cloud
 ```
 

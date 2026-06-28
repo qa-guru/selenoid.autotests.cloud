@@ -23,6 +23,8 @@ Production-деплой публичного Selenoid: **https://selenoid.autote
 
 Полная документация: [`deploy/README.md`](deploy/README.md).
 
-## Локальная разработка стека
+## browsers.json на prod
 
-Исходники hub/UI/cm и `dev/` — в этой рабочей области рядом (`../selenoid`, `../selenoid-ui`, `../cm`, `../dev`). Канонический `browsers.json` — в `../dev/browsers.json`; синхронизация сюда: `../dev/scripts/sync-cm-browsers.sh` → `deploy/browsers-production.json`.
+Канонический конфиг стека: [`qa-guru/selenoid/config/browsers.json`](https://github.com/qa-guru/selenoid/blob/main/config/browsers.json).
+
+На сервер кладётся копия из [`deploy/browsers-production.json`](deploy/browsers-production.json) → `/opt/selenoid/browsers.json` (см. [`deploy/deploy.sh`](deploy/deploy.sh)). Встроенный конфиг **cm** (`selenoid/data/browsers-qaguru.json`) используется при установке без `-j`; для prod deploy приоритет у `browsers-production.json`.
