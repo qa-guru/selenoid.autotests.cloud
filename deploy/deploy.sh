@@ -176,11 +176,7 @@ fi
 
 ui_body="$(curl -sS "http://127.0.0.1:8080/" 2>/dev/null || true)"
 ui_code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8080/" 2>/dev/null || echo "000")"
-ui_shell_ok=false
-if grep -q 'id="app-header"' <<<"$ui_body"; then ui_shell_ok=true; fi
-if grep -q 'data-testid="stats-bar"' <<<"$ui_body"; then ui_shell_ok=true; fi
-if grep -q 'id="root"' <<<"$ui_body"; then ui_shell_ok=true; fi
-if [[ "$ui_code" == "200" && "$ui_shell_ok" == true ]]; then
+if [[ "$ui_code" == "200" ]] && [[ "$ui_body" == *app-header* || "$ui_body" == *'data-testid="stats-bar"'* || "$ui_body" == *'id="root"'* ]]; then
   echo "OK  UI is public (HTTP 200, frontend shell present)"
 elif [[ "$ui_code" == "200" ]]; then
   echo "FAIL: selenoid-ui returned HTTP 200 but frontend is missing (broken statik build?)" >&2
