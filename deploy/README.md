@@ -120,7 +120,8 @@ SELENOID_VERSION=v2.1.0 ./deploy/deploy.sh
 | 443 | `/` | `127.0.0.1:8080` (UI) |
 | 443 | `/wd/hub` | `127.0.0.1:8080` (UI → hub) |
 | 443 | `/playwright/` | `127.0.0.1:8080` (UI → hub) |
-| 443 | `/status` | `127.0.0.1:4444` |
+| 443 | `/status` | `127.0.0.1:8080` (UI-shaped JSON) |
+| 443 | `/hub/status` | `127.0.0.1:4444` (raw hub, мониторинг) |
 | 4445 | `/` | `127.0.0.1:4444` (hub) — CI |
 
 Не проксируйте `/wd/hub` и `/playwright/` напрямую на hub:443 — проксируйте через selenoid-ui.

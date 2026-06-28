@@ -61,7 +61,7 @@ echo "=== browser versions ==="
 for pair in "chrome:148.0" "msedge:145.0" "playwright-chromium:1.61.1" "playwright-chrome:1.61.1" "playwright-msedge:1.61.1" "firefox:150.0"; do
   browser="${pair%%:*}"
   version="${pair##*:}"
-  if jq -e --arg b "$browser" --arg v "$version" '.browsers[$b][$v] != null' <<<"$status_json" >/dev/null; then
+  if jq -e --arg b "$browser" --arg v "$version" '.state.browsers[$b][$v] != null' <<<"$status_json" >/dev/null; then
     echo "OK  $browser $version"
   else
     echo "FAIL $browser $version not in /status" >&2
