@@ -176,8 +176,8 @@ fi
 
 ui_body="$(curl -sS "http://127.0.0.1:8080/" 2>/dev/null || true)"
 ui_code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8080/" 2>/dev/null || echo "000")"
-if [[ "$ui_code" == "200" ]] && grep -q 'id="root"' <<<"$ui_body"; then
-  echo "OK  UI is public (HTTP 200, React shell present)"
+if [[ "$ui_code" == "200" ]] && grep -qE 'id="(root|app-header)"|data-testid="stats-bar"' <<<"$ui_body"; then
+  echo "OK  UI is public (HTTP 200, frontend shell present)"
 elif [[ "$ui_code" == "200" ]]; then
   echo "FAIL: selenoid-ui returned HTTP 200 but frontend is missing (broken statik build?)" >&2
   echo "      Response starts with: ${ui_body:0:120}" >&2
