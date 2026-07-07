@@ -1,0 +1,79 @@
+name: Trigger selenoid-tests (prod smoke)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_tags:
+        description: "JUnit slice for prod hub (api or smoke)"
+        required: false
+        default: api
+      env_profile:
+        description: "Env profile (-Denv=)"
+        required: false
+        default: selenoid_autotests_cloud_api
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+
+concurrency:
+  group: trigger-selenoid-tests-prod
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    name: Trigger selenoid-tests on prod hub
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    env:
+      TESTS_REPO: qa-guru/selenoid-tests
+      TEST_TAGS: ${{ github.event.inputs.test_tags || 'api' }}
+      ENV_PROFILE: ${{ github.event.inputs.env_profile || 'selenoid_autotests_cloud_api' }}
+
+    steps:
+      - name: Validate configuration
+        run: |
+          if [[ -z "${{ secrets.SELENOID_TESTS_DISPATCH_TOKEN }}" ]]; then
+            echo "::error::Secret SELENOID_TESTS_DISPATCH_TOKEN is not set (PAT with repo scope on ${TESTS_REPO})."
+            exit 1
+          fi
+
+      - name: Resolve deploy version
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "version=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dispatch prod smoke to selenoid-tests
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.SELENOID_TESTS_DISPATCH_TOKEN }}
+          repository: ${{ env.TESTS_REPO }}
+          event-type: deploy-smoke
+          client-payload: >-
+            {"source_repo":"${{ github.repository }}",
+             "source_version":"${{ steps.meta.outputs.version }}",
+             "source_ref":"${{ steps.meta.outputs.ref }}",
+             "env_profile":"${{ env.ENV_PROFILE }}",
+             "test_tags":"${{ env.TEST_TAGS }}",
+             "skip_go_unit":true}
+
+      - name: Job summary
+        run: |
+          {
+            echo "## Trigger selenoid-tests (prod smoke)"
+            echo ""
+            echo "- Target: [\`${{ env.TESTS_REPO }}\`](https://github.com/${{ env.TESTS_REPO }}) (\`deploy-smoke\`)"
+            echo "- Env profile: \`${{ env.ENV_PROFILE }}\`"
+            echo "- Tags slice: \`${{ env.TEST_TAGS }}\`"
+            echo "- Go unit: skipped (\`skip_go_unit\`)"
+            echo "- Deploy version: \`${{ steps.meta.outputs.version }}\`"
+            echo ""
+            echo "Follow the run in [selenoid-tests Actions](https://github.com/${{ env.TESTS_REPO }}/actions/workflows/selenoid_github-orchestrator.yml)."
+          } >> "$GITHUB_STEP_SUMMARY"
