@@ -1,34 +1,41 @@
 {
   "chrome": {
-    "default": "148.0",
+    "default": "149.0",
     "versions": {
+      "149.0": {
+        "image": "qaguru/webdriver-chrome:149",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
+      },
+      "149.0-min": {
+        "image": "qaguru/webdriver-chrome:149-min",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
+      },
       "148.0": {
-        "image": "twilio/selenoid:chrome_stable_148",
+        "image": "qaguru/webdriver-chrome:148",
         "port": "4444",
         "path": "/",
-        "tmpfs": { "/tmp": "size=512m" }
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
       },
-      "147.0": {
-        "image": "twilio/selenoid:chrome_stable_147",
+      "148.0-min": {
+        "image": "qaguru/webdriver-chrome:148-min",
         "port": "4444",
         "path": "/",
-        "tmpfs": { "/tmp": "size=512m" }
-      },
-      "146.0": {
-        "image": "twilio/selenoid:chrome_stable_146",
-        "port": "4444",
-        "path": "/",
-        "tmpfs": { "/tmp": "size=512m" }
-      },
-      "128.0": {
-        "image": "selenoid/vnc_chrome:128.0",
-        "port": "4444",
-        "path": "/",
-        "tmpfs": { "/tmp": "size=512m" }
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
       }
     }
   },
-
   "firefox": {
     "default": "150.0",
     "versions": {
@@ -36,23 +43,28 @@
         "image": "twilio/selenoid:firefox_stable_150",
         "port": "4444",
         "path": "/wd/hub",
-        "tmpfs": { "/tmp": "size=512m" }
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
       },
       "149.0": {
         "image": "twilio/selenoid:firefox_stable_149",
         "port": "4444",
         "path": "/wd/hub",
-        "tmpfs": { "/tmp": "size=512m" }
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
       },
       "148.0": {
         "image": "twilio/selenoid:firefox_stable_148",
         "port": "4444",
         "path": "/wd/hub",
-        "tmpfs": { "/tmp": "size=512m" }
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
       }
     }
   },
-
   "msedge": {
     "default": "145.0",
     "versions": {
@@ -60,23 +72,28 @@
         "image": "twilio/selenoid:edge_stable_145",
         "port": "4444",
         "path": "/",
-        "tmpfs": { "/tmp": "size=512m" }
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
       },
       "144.0": {
         "image": "twilio/selenoid:edge_stable_144",
         "port": "4444",
         "path": "/",
-        "tmpfs": { "/tmp": "size=512m" }
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
       },
       "143.0": {
         "image": "twilio/selenoid:edge_stable_143",
         "port": "4444",
         "path": "/",
-        "tmpfs": { "/tmp": "size=512m" }
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
       }
     }
   },
-
   "playwright-chromium": {
     "default": "1.61.1",
     "versions": {
@@ -142,7 +159,6 @@
       }
     }
   },
-
   "playwright-firefox": {
     "default": "1.61.1",
     "versions": {
@@ -178,7 +194,6 @@
       }
     }
   },
-
   "playwright-webkit": {
     "default": "1.61.1",
     "versions": {
@@ -214,7 +229,6 @@
       }
     }
   },
-
   "playwright-chrome": {
     "default": "1.61.1",
     "versions": {
@@ -250,7 +264,6 @@
       }
     }
   },
-
   "playwright-msedge": {
     "default": "1.61.1",
     "versions": {
