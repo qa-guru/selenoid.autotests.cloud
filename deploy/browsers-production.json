@@ -37,28 +37,36 @@
     }
   },
   "firefox": {
-    "default": "150.0",
+    "default": "151.0",
     "versions": {
+      "151.0": {
+        "image": "qaguru/webdriver-firefox:151",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
+      },
+      "151.0-min": {
+        "image": "qaguru/webdriver-firefox:151-min",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
+      },
       "150.0": {
-        "image": "twilio/selenoid:firefox_stable_150",
+        "image": "qaguru/webdriver-firefox:150",
         "port": "4444",
-        "path": "/wd/hub",
+        "path": "/",
         "tmpfs": {
           "/tmp": "size=512m"
         }
       },
-      "149.0": {
-        "image": "twilio/selenoid:firefox_stable_149",
+      "150.0-min": {
+        "image": "qaguru/webdriver-firefox:150-min",
         "port": "4444",
-        "path": "/wd/hub",
-        "tmpfs": {
-          "/tmp": "size=512m"
-        }
-      },
-      "148.0": {
-        "image": "twilio/selenoid:firefox_stable_148",
-        "port": "4444",
-        "path": "/wd/hub",
+        "path": "/",
         "tmpfs": {
           "/tmp": "size=512m"
         }
@@ -69,7 +77,15 @@
     "default": "145.0",
     "versions": {
       "145.0": {
-        "image": "twilio/selenoid:edge_stable_145",
+        "image": "qaguru/webdriver-msedge:145",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        }
+      },
+      "145.0-min": {
+        "image": "qaguru/webdriver-msedge:145-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -77,15 +93,15 @@
         }
       },
       "144.0": {
-        "image": "twilio/selenoid:edge_stable_144",
+        "image": "qaguru/webdriver-msedge:144",
         "port": "4444",
         "path": "/",
         "tmpfs": {
           "/tmp": "size=512m"
         }
       },
-      "143.0": {
-        "image": "twilio/selenoid:edge_stable_143",
+      "144.0-min": {
+        "image": "qaguru/webdriver-msedge:144-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {

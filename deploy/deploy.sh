@@ -208,6 +208,40 @@ if command -v jq >/dev/null; then
 else
   echo "$session_json"
 fi
+
+echo "=== smoke: create firefox session ==="
+session_json="$(curl -sS -m 120 -X POST "http://127.0.0.1:4444/wd/hub/session" \
+  -H 'Content-Type: application/json' \
+  -d '{"capabilities":{"alwaysMatch":{"browserName":"firefox","browserVersion":"151.0","selenoid:options":{"sessionTimeout":"30s","name":"deploy-smoke","enableVNC":true}}}}' || true)"
+if command -v jq >/dev/null; then
+  session_id="$(jq -r '.value.sessionId // .sessionId // empty' <<<"$session_json")"
+  if [[ -z "$session_id" ]]; then
+    echo "FAIL: could not create firefox session: $session_json" >&2
+    tail -30 "${CONFIG_DIR}/logs/selenoid.log" 2>&1 || true
+    exit 1
+  fi
+  echo "OK  session ${session_id}"
+  curl -sS -X DELETE "http://127.0.0.1:4444/wd/hub/session/${session_id}" >/dev/null || true
+else
+  echo "$session_json"
+fi
+
+echo "=== smoke: create msedge session ==="
+session_json="$(curl -sS -m 120 -X POST "http://127.0.0.1:4444/wd/hub/session" \
+  -H 'Content-Type: application/json' \
+  -d '{"capabilities":{"alwaysMatch":{"browserName":"MicrosoftEdge","browserVersion":"145.0","selenoid:options":{"sessionTimeout":"30s","name":"deploy-smoke","enableVNC":true}}}}' || true)"
+if command -v jq >/dev/null; then
+  session_id="$(jq -r '.value.sessionId // .sessionId // empty' <<<"$session_json")"
+  if [[ -z "$session_id" ]]; then
+    echo "FAIL: could not create msedge session: $session_json" >&2
+    tail -30 "${CONFIG_DIR}/logs/selenoid.log" 2>&1 || true
+    exit 1
+  fi
+  echo "OK  session ${session_id}"
+  curl -sS -X DELETE "http://127.0.0.1:4444/wd/hub/session/${session_id}" >/dev/null || true
+else
+  echo "$session_json"
+fi
 echo
 docker ps --filter name=selenoid --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 pgrep -af "${CONFIG_DIR}/bin/selenoid" || true
