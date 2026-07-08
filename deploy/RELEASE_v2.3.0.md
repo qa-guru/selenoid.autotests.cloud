@@ -2,6 +2,8 @@
 
 Prod `browsers.json`: Firefox and Edge WebDriver migrated from `twilio/selenoid:*` to `qaguru/webdriver-*`.
 
+Hub pin for this catalog: **[selenoid v2.1.7](https://github.com/qa-guru/selenoid/releases/tag/v2.1.7)** (strips `-min` from `browserVersion` before proxy to geckodriver). UI stays **v2.1.1** (release assets); public `/status.version` therefore shows UI stamp, not hub — check `/wd/hub/status`.
+
 | Browser | Hub default | Warm image | Min image |
 |---------|-------------|------------|-----------|
 | Firefox | `151.0` | `qaguru/webdriver-firefox:151` | `:151-min` |

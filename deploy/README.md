@@ -7,7 +7,9 @@
 | `/` (UI) | `https://selenoid.autotests.cloud` |
 | `/wd/hub` | `https://selenoid.autotests.cloud/wd/hub` |
 | `/playwright/` | Create Session в UI или `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?enableVNC=true&enableVideo=true` |
-| `/status` | `https://selenoid.autotests.cloud/status` |
+| `/status` | UI-shaped JSON (`.state`, `.version` = **selenoid-ui** stamp) |
+| `/hub/status` | raw hub capacity (total/used/browsers; без `.version`) |
+| `/wd/hub/status` | W3C hub status — **версия hub** в `.value.message` (basic auth) |
 | `:4445` | прямой hub API для CI |
 
 Справочный полный конфиг: [`nginx-selenoid.conf`](nginx-selenoid.conf).
@@ -19,8 +21,12 @@
 | Selenium | `https://selenoid.autotests.cloud/wd/hub` |
 | Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?enableVNC=true&enableVideo=true` |
 | UI | `https://selenoid.autotests.cloud/` |
-| Status | `https://selenoid.autotests.cloud/status` |
+| Status (UI) | `https://selenoid.autotests.cloud/status` — `.version` = UI, не hub |
+| Hub status | `https://selenoid.autotests.cloud/hub/status` |
+| Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.1.7 built at …` |
 | Video | `https://selenoid.autotests.cloud/video/` |
+
+Текущие pin’ы `deploy.sh`: hub **v2.1.7**, UI **v2.1.1** (есть release assets; `selenoid-ui` v2.1.6 — пустой релиз), cm **v2.1.6**.
 
 ### Переменные для тестов
 
@@ -97,16 +103,18 @@ chmod +x deploy.sh
 ./deploy/remote-update.sh
 ```
 
-Pin версии (опционально, по умолчанию **v2.1.0**):
+Pin версии (опционально; default hub **v2.1.7**, UI **v2.1.1**, cm **v2.1.6**):
 
 ```bash
-SELENOID_VERSION=v2.1.0 ./deploy/deploy.sh
+SELENOID_VERSION=v2.1.7 SELENOID_UI_VERSION=v2.1.1 CM_VERSION=v2.1.6 ./deploy/deploy.sh
 ```
 
 ### Проверка
 
 ```bash
 ./deploy/smoke-remote.sh https://selenoid.autotests.cloud
+# hub revision assertion (default EXPECTED_HUB_VERSION=v2.1.7):
+# curl -u user1:1234 -fsSL …/wd/hub/status | jq -r .value.message
 ```
 
 ---
@@ -120,11 +128,13 @@ SELENOID_VERSION=v2.1.0 ./deploy/deploy.sh
 | 443 | `/` | `127.0.0.1:8080` (UI) |
 | 443 | `/wd/hub` | `127.0.0.1:8080` (UI → hub) |
 | 443 | `/playwright/` | `127.0.0.1:8080` (UI → hub) |
-| 443 | `/status` | `127.0.0.1:8080` (UI-shaped JSON) |
-| 443 | `/hub/status` | `127.0.0.1:4444` (raw hub, мониторинг) |
+| 443 | `/status` | `127.0.0.1:8080` (UI JSON; `.version` = UI stamp) |
+| 443 | `/hub/status` | `127.0.0.1:4444` (raw hub capacity) |
+| 443 | `/wd/hub/status` | через UI → hub (auth; версия hub в message) |
 | 4445 | `/` | `127.0.0.1:4444` (hub) — CI |
 
 Не проксируйте `/wd/hub` и `/playwright/` напрямую на hub:443 — проксируйте через selenoid-ui.
+Не сверяйте версию hub по публичному `/status.version` — это stamp selenoid-ui.
 
 Справочные файлы: [`nginx-selenoid.conf`](nginx-selenoid.conf), [`sync-nginx.sh`](sync-nginx.sh).
 

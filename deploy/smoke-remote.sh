@@ -88,13 +88,27 @@ else
 fi
 
 echo "=== GET $BASE_URL/wd/hub/status (with basic auth) ==="
-wd_code="$(curl_http_code "$BASE_URL/wd/hub/status" "${AUTH[@]}")"
-if [[ "$wd_code" == "200" ]]; then
-  echo "OK  /wd/hub with auth (HTTP 200)"
-else
-  echo "FAIL /wd/hub with auth: HTTP $wd_code" >&2
+wd_json="$(curl_retry "$BASE_URL/wd/hub/status" -fsSL "${AUTH[@]}")"
+echo "$wd_json" | (command -v jq >/dev/null && jq . || cat)
+if ! jq -e '.value.ready == true' <<<"$wd_json" >/dev/null; then
+  echo "FAIL /wd/hub/status ready!=true" >&2
   exit 1
 fi
+echo "OK  /wd/hub with auth (ready)"
+
+# /status.version is selenoid-ui build stamp; hub revision lives in W3C /wd/hub/status.
+EXPECTED_HUB_VERSION="${EXPECTED_HUB_VERSION:-${SELENOID_VERSION:-v2.1.7}}"
+EXPECTED_HUB_VERSION="${EXPECTED_HUB_VERSION#v}"
+hub_msg="$(jq -r '.value.message // empty' <<<"$wd_json")"
+if [[ "$hub_msg" == *"Selenoid v${EXPECTED_HUB_VERSION}"* ]]; then
+  echo "OK  hub version: $hub_msg"
+else
+  echo "FAIL hub version: want Selenoid v${EXPECTED_HUB_VERSION}*, got: ${hub_msg:-<empty>}" >&2
+  exit 1
+fi
+
+ui_version="$(jq -r '.version // empty' <<<"$status_json")"
+echo "OK  UI /status.version (not hub): ${ui_version:-<empty>}"
 
 echo "=== GET $BASE_URL/playwright/... without auth (expect 400 — WS upgrade required) ==="
 pw_code="$(curl_http_code "$BASE_URL/playwright/playwright-chromium/1.61.1" --max-time "$PLAYWRIGHT_SMOKE_TIMEOUT")"
