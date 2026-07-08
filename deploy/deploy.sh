@@ -6,8 +6,9 @@ set -euo pipefail
 CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
 CM_BIN="${CM_BIN:-$HOME/cm}"
 CM_URL="${CM_URL:-https://github.com/qa-guru/cm/releases/latest/download/cm_linux_amd64}"
-VERSION="${SELENOID_VERSION:-v2.1.1}"
-UI_VERSION="${SELENOID_UI_VERSION:-v2.1.1}"
+VERSION="${SELENOID_VERSION:-v2.1.7}"
+UI_VERSION="${SELENOID_UI_VERSION:-v2.1.6}"
+CM_VERSION="${CM_VERSION:-v2.1.6}"
 GITHUB_OWNER="${GITHUB_OWNER:-qa-guru}"
 version_args=()
 if [[ -n "$VERSION" ]]; then
@@ -28,7 +29,8 @@ if [[ ! -x "$CM_BIN" ]]; then
 fi
 
 refresh_cm() {
-  local tag="${VERSION:-latest}"
+  # cm release tags are independent of hub SELENOID_VERSION
+  local tag="${CM_VERSION:-latest}"
   local url="https://github.com/${GITHUB_OWNER}/cm/releases/download/${tag}/cm_linux_amd64"
   if [[ "$tag" == "latest" ]]; then
     url="$CM_URL"
