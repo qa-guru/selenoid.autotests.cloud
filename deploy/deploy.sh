@@ -76,7 +76,7 @@ else
   "$CM_BIN" selenoid configure -c "$CONFIG_DIR" -f "${version_args[@]}"
 fi
 
-echo "=== pull all browser images from browsers.json ==="
+echo "=== pull all browser images from browsers.json (always refresh tags) ==="
 pull_images() {
   if command -v jq >/dev/null 2>&1; then
     jq -r '.. | objects | select(has("image")) | .image' "$CONFIG_DIR/browsers.json" | sort -u
@@ -85,7 +85,10 @@ pull_images() {
   fi
 }
 while read -r img; do
-  [[ -n "$img" ]] && docker pull "$img"
+  [[ -z "$img" ]] && continue
+  echo "--- docker pull ${img} ---"
+  docker pull "$img"
+  docker image inspect "$img" --format '{{.RepoTags}} {{.Id}} {{.Created}}' 2>/dev/null || true
 done < <(pull_images)
 docker pull selenoid/video-recorder:latest-release
 
