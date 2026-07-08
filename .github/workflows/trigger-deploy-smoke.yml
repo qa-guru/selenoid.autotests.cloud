@@ -52,6 +52,10 @@ jobs:
             echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Record dispatch epoch
+        id: clock
+        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Dispatch prod smoke to selenoid-tests
         id: dispatch
         uses: peter-evans/repository-dispatch@v4
@@ -72,28 +76,27 @@ jobs:
         id: wait
         env:
           GH_TOKEN: ${{ secrets.SELENOID_TESTS_DISPATCH_TOKEN }}
-          SOURCE_VERSION: ${{ steps.meta.outputs.version }}
+          DISPATCH_TS: ${{ steps.clock.outputs.epoch }}
         run: |
           set -euo pipefail
 
-          DISPATCH_TS="$(date +%s)"
           DEADLINE=$((DISPATCH_TS + 1200))
           RUN_ID=""
 
-          echo "Waiting for deploy-smoke in ${TESTS_REPO} (source_version=${SOURCE_VERSION})..."
+          echo "Waiting for deploy-smoke in ${TESTS_REPO} (since epoch ${DISPATCH_TS})..."
 
           while [[ "$(date +%s)" -lt "${DEADLINE}" ]]; do
             while IFS=$'\t' read -r candidate_id created_at; do
               [[ -z "${candidate_id}" ]] && continue
               CREATED_TS="$(date -d "${created_at}" +%s)"
-              if (( CREATED_TS + 10 < DISPATCH_TS )); then
+              if (( CREATED_TS + 30 < DISPATCH_TS )); then
                 continue
               fi
-
               RUN_ID="${candidate_id}"
               break 2
-            done < <(gh api "repos/${TESTS_REPO}/actions/runs?event=repository_dispatch&per_page=15" \
-              --jq -r '.workflow_runs[] | select(.display_title == "deploy-smoke") | [.id, .created_at] | @tsv')
+            done < <(gh run list -R "${TESTS_REPO}" --event repository_dispatch -L 15 \
+              --json databaseId,createdAt,displayTitle \
+              --jq -r '.[] | select(.displayTitle == "deploy-smoke") | [.databaseId, .createdAt] | @tsv')
 
             sleep 15
           done
@@ -106,9 +109,15 @@ jobs:
           echo "tests_run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
           echo "Found selenoid-tests run ${RUN_ID}"
 
-          gh run watch "${RUN_ID}" -R "${TESTS_REPO}" || true
-          conclusion="$(gh api "repos/${TESTS_REPO}/actions/runs/${RUN_ID}" --jq '.conclusion // ""')"
-          echo "tests_conclusion=${conclusion}" >> "$GITHUB_OUTPUT"
+          while true; do
+            status="$(gh run view "${RUN_ID}" -R "${TESTS_REPO}" --json status --jq -r '.status')"
+            if [[ "${status}" == "completed" ]]; then
+              conclusion="$(gh run view "${RUN_ID}" -R "${TESTS_REPO}" --json conclusion --jq -r '.conclusion // ""')"
+              echo "tests_conclusion=${conclusion}" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            sleep 15
+          done
 
       - name: Collect Allure links from selenoid-tests
         id: allure
