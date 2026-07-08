@@ -48,7 +48,6 @@ jobs:
           username: ${{ secrets.SELENOID_DEPLOY_USER }}
           key: ${{ secrets.SELENOID_DEPLOY_KEY }}
           command_timeout: 20m
-          script_stop: false
           script: |
             set -euo pipefail
             TAG="${{ steps.meta.outputs.tag }}"

@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: selenoid-production
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
-      - uses: appleboy/ssh-action@v1.2.0
+      - uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SELENOID_DEPLOY_HOST }}
           username: ${{ secrets.SELENOID_DEPLOY_USER }}
