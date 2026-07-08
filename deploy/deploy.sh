@@ -251,10 +251,10 @@ NGINX_CONF="${NGINX_CONF_SRC:-/tmp/nginx-selenoid.conf}"
 NGINX_SYNC="${NGINX_SYNC_SCRIPT:-/tmp/sync-nginx.sh}"
 if [[ ! -f "$NGINX_CONF" || ! -f "$NGINX_SYNC" ]]; then
   echo "WARN: nginx config not found ($NGINX_CONF / $NGINX_SYNC) — skip"
-elif NGINX_CONF_SRC="$NGINX_CONF" sudo -n "$NGINX_SYNC"; then
+elif timeout 60 env NGINX_CONF_SRC="$NGINX_CONF" sudo -n "$NGINX_SYNC"; then
   echo "OK  nginx config applied"
 else
-  echo "WARN: nginx sync failed — run on server as root:" >&2
+  echo "WARN: nginx sync failed or timed out — run on server as root:" >&2
   echo "  sudo ./deploy/bootstrap.sh   # once, installs NOPASSWD for sync-nginx.sh" >&2
   echo "  sudo NGINX_CONF_SRC=$NGINX_CONF $NGINX_SYNC" >&2
 fi
