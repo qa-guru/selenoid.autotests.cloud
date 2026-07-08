@@ -73,11 +73,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.SELENOID_TESTS_DISPATCH_TOKEN }}
           SOURCE_VERSION: ${{ steps.meta.outputs.version }}
-          DISPATCH_EPOCH: ${{ github.run_started_at }}
         run: |
           set -euo pipefail
 
-          DISPATCH_TS="$(date -d "${DISPATCH_EPOCH}" +%s)"
+          DISPATCH_TS="$(date +%s)"
           DEADLINE=$((DISPATCH_TS + 1200))
           RUN_ID=""
 
