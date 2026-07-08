@@ -52,6 +52,9 @@ jobs:
           script: |
             set -euo pipefail
             export SELENOID_VERSION="${{ steps.meta.outputs.tag }}"
+            # UI/CM tags are independent of hub; pin to tags that have release assets.
+            export SELENOID_UI_VERSION="${SELENOID_UI_VERSION:-v2.1.1}"
+            export CM_VERSION="${CM_VERSION:-v2.1.6}"
             export SELENOID_CONFIG_DIR="${{ vars.SELENOID_CONFIG_DIR }}"
             export SELENOID_CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
             export CM_BIN="$HOME/cm"
@@ -69,6 +72,9 @@ jobs:
             export BROWSERS_PRODUCTION="$STAGING/browsers-production.json"
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/deploy.sh" -o "$STAGING/deploy-selenoid.sh"
             chmod +x "$STAGING/deploy-selenoid.sh"
+            # Force UI/CM pins even if the host already exported an empty-asset tag.
+            export SELENOID_UI_VERSION=v2.1.1
+            export CM_VERSION=v2.1.6
             bash "$STAGING/deploy-selenoid.sh"
 
       - name: Smoke test (public)
