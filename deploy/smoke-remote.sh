@@ -108,7 +108,14 @@ else
 fi
 
 ui_version="$(jq -r '.version // empty' <<<"$status_json")"
-echo "OK  UI /status.version (not hub): ${ui_version:-<empty>}"
+EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v2.1.3}}"
+EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION#v}"
+if [[ "$ui_version" == v${EXPECTED_UI_VERSION}* ]]; then
+  echo "OK  UI /status.version: $ui_version"
+else
+  echo "FAIL UI version: want v${EXPECTED_UI_VERSION}*, got: ${ui_version:-<empty>}" >&2
+  exit 1
+fi
 
 echo "=== GET $BASE_URL/playwright/... without auth (expect 400 — WS upgrade required) ==="
 pw_code="$(curl_http_code "$BASE_URL/playwright/playwright-chromium/1.61.1" --max-time "$PLAYWRIGHT_SMOKE_TIMEOUT")"

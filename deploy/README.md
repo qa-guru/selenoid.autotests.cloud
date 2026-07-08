@@ -26,7 +26,7 @@
 | Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.1.7 built at …` |
 | Video | `https://selenoid.autotests.cloud/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v2.1.7**, UI **v2.1.1** (есть release assets; `selenoid-ui` v2.1.6 — пустой релиз), cm **v2.1.6**.
+Текущие pin’ы `deploy.sh`: hub **v2.1.7**, UI **v2.1.3**, cm **v2.1.6**.
 
 ### Переменные для тестов
 
@@ -103,10 +103,10 @@ chmod +x deploy.sh
 ./deploy/remote-update.sh
 ```
 
-Pin версии (опционально; default hub **v2.1.7**, UI **v2.1.1**, cm **v2.1.6**):
+Pin версии (опционально; default hub **v2.1.7**, UI **v2.1.3**, cm **v2.1.6**):
 
 ```bash
-SELENOID_VERSION=v2.1.7 SELENOID_UI_VERSION=v2.1.1 CM_VERSION=v2.1.6 ./deploy/deploy.sh
+SELENOID_VERSION=v2.1.7 SELENOID_UI_VERSION=v2.1.3 CM_VERSION=v2.1.6 ./deploy/deploy.sh
 ```
 
 ### Проверка
