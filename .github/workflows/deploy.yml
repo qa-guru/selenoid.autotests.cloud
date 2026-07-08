@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: selenoid-production
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.ref }}
 
@@ -42,7 +42,7 @@ jobs:
           fi
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SELENOID_DEPLOY_HOST }}
           username: ${{ secrets.SELENOID_DEPLOY_USER }}
@@ -51,10 +51,13 @@ jobs:
           script_stop: false
           script: |
             set -euo pipefail
-            export SELENOID_VERSION="${{ steps.meta.outputs.tag }}"
+            TAG="${{ steps.meta.outputs.tag }}"
+            if [[ -n "$TAG" ]]; then
+              export SELENOID_VERSION="$TAG"
+            fi
             # UI/CM tags are independent of hub; pin to tags that have release assets.
-            export SELENOID_UI_VERSION="${SELENOID_UI_VERSION:-v2.1.3}"
-            export CM_VERSION="${CM_VERSION:-v2.1.6}"
+            export SELENOID_UI_VERSION="${SELENOID_UI_VERSION:-v2.1.7}"
+            export CM_VERSION="${CM_VERSION:-v2.1.7}"
             export SELENOID_CONFIG_DIR="${{ vars.SELENOID_CONFIG_DIR }}"
             export SELENOID_CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
             export CM_BIN="$HOME/cm"
@@ -73,8 +76,8 @@ jobs:
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/deploy.sh" -o "$STAGING/deploy-selenoid.sh"
             chmod +x "$STAGING/deploy-selenoid.sh"
             # Force UI/CM pins even if the host already exported an empty-asset tag.
-            export SELENOID_UI_VERSION=v2.1.3
-            export CM_VERSION=v2.1.6
+            export SELENOID_UI_VERSION=v2.1.7
+            export CM_VERSION=v2.1.7
             bash "$STAGING/deploy-selenoid.sh"
 
       - name: Smoke test (public)
