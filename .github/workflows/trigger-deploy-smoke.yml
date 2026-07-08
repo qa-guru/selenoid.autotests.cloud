@@ -83,26 +83,17 @@ jobs:
           echo "Waiting for deploy-smoke in ${TESTS_REPO} (source_version=${SOURCE_VERSION})..."
 
           while [[ "$(date +%s)" -lt "${DEADLINE}" ]]; do
-            mapfile -t CANDIDATES < <(gh api "repos/${TESTS_REPO}/actions/workflows/selenoid_github-orchestrator.yml/runs" \
-              -f event=repository_dispatch \
-              -f per_page=15 \
-              --jq '.workflow_runs[] | select(.display_title == "deploy-smoke") | [.id, .created_at] | @tsv')
-
-            for entry in "${CANDIDATES[@]}"; do
-              IFS=$'\t' read -r candidate_id created_at <<< "${entry}"
+            while IFS=$'\t' read -r candidate_id created_at; do
+              [[ -z "${candidate_id}" ]] && continue
               CREATED_TS="$(date -d "${created_at}" +%s)"
-              if (( CREATED_TS + 5 < DISPATCH_TS )); then
-                continue
-              fi
-
-              if ! gh run view "${candidate_id}" -R "${TESTS_REPO}" --log 2>/dev/null \
-                | grep -q "SOURCE_VERSION: ${SOURCE_VERSION}"; then
+              if (( CREATED_TS + 10 < DISPATCH_TS )); then
                 continue
               fi
 
               RUN_ID="${candidate_id}"
               break 2
-            done
+            done < <(gh api "repos/${TESTS_REPO}/actions/runs?event=repository_dispatch&per_page=15" \
+              --jq -r '.workflow_runs[] | select(.display_title == "deploy-smoke") | [.id, .created_at] | @tsv')
 
             sleep 15
           done
