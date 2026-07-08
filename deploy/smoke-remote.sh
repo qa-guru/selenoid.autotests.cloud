@@ -97,7 +97,7 @@ fi
 echo "OK  /wd/hub with auth (ready)"
 
 # /status.version is selenoid-ui build stamp; hub revision lives in W3C /wd/hub/status.
-EXPECTED_HUB_VERSION="${EXPECTED_HUB_VERSION:-${SELENOID_VERSION:-v2.1.7}}"
+EXPECTED_HUB_VERSION="${EXPECTED_HUB_VERSION:-${SELENOID_VERSION:-v2.1.8}}"
 EXPECTED_HUB_VERSION="${EXPECTED_HUB_VERSION#v}"
 hub_msg="$(jq -r '.value.message // empty' <<<"$wd_json")"
 if [[ "$hub_msg" == *"Selenoid v${EXPECTED_HUB_VERSION}"* ]]; then
@@ -108,7 +108,7 @@ else
 fi
 
 ui_version="$(jq -r '.version // empty' <<<"$status_json")"
-EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v2.1.3}}"
+EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v2.1.7}}"
 EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION#v}"
 if [[ "$ui_version" == v${EXPECTED_UI_VERSION}* ]]; then
   echo "OK  UI /status.version: $ui_version"
