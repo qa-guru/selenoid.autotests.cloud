@@ -23,6 +23,7 @@ jobs:
   trigger:
     name: Trigger selenoid-tests on prod hub
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
@@ -30,6 +31,7 @@ jobs:
       TESTS_REPO: qa-guru/selenoid-tests
       TEST_TAGS: ${{ github.event.inputs.test_tags || 'api' }}
       ENV_PROFILE: ${{ github.event.inputs.env_profile || 'selenoid_autotests_cloud_api' }}
+      ALLURE_ENDPOINT: ${{ vars.ALLURE_ENDPOINT || 'https://allure.autotests.cloud' }}
 
     steps:
       - name: Validate configuration
@@ -51,6 +53,7 @@ jobs:
           fi
 
       - name: Dispatch prod smoke to selenoid-tests
+        id: dispatch
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.SELENOID_TESTS_DISPATCH_TOKEN }}
@@ -62,9 +65,107 @@ jobs:
              "source_ref":"${{ steps.meta.outputs.ref }}",
              "env_profile":"${{ env.ENV_PROFILE }}",
              "test_tags":"${{ env.TEST_TAGS }}",
-             "skip_go_unit":true}
+             "skip_go_unit":true,
+             "trigger_run_id":"${{ github.run_id }}"}
+
+      - name: Wait for selenoid-tests run
+        id: wait
+        env:
+          GH_TOKEN: ${{ secrets.SELENOID_TESTS_DISPATCH_TOKEN }}
+          SOURCE_VERSION: ${{ steps.meta.outputs.version }}
+          DISPATCH_EPOCH: ${{ github.run_started_at }}
+        run: |
+          set -euo pipefail
+
+          DISPATCH_TS="$(date -d "${DISPATCH_EPOCH}" +%s)"
+          DEADLINE=$((DISPATCH_TS + 1200))
+          RUN_ID=""
+
+          echo "Waiting for deploy-smoke in ${TESTS_REPO} (source_version=${SOURCE_VERSION})..."
+
+          while [[ "$(date +%s)" -lt "${DEADLINE}" ]]; do
+            mapfile -t CANDIDATES < <(gh api "repos/${TESTS_REPO}/actions/workflows/selenoid_github-orchestrator.yml/runs" \
+              -f event=repository_dispatch \
+              -f per_page=15 \
+              --jq '.workflow_runs[] | select(.display_title == "deploy-smoke") | [.id, .created_at] | @tsv')
+
+            for entry in "${CANDIDATES[@]}"; do
+              IFS=$'\t' read -r candidate_id created_at <<< "${entry}"
+              CREATED_TS="$(date -d "${created_at}" +%s)"
+              if (( CREATED_TS + 5 < DISPATCH_TS )); then
+                continue
+              fi
+
+              if ! gh run view "${candidate_id}" -R "${TESTS_REPO}" --log 2>/dev/null \
+                | grep -q "SOURCE_VERSION: ${SOURCE_VERSION}"; then
+                continue
+              fi
+
+              RUN_ID="${candidate_id}"
+              break 2
+            done
+
+            sleep 15
+          done
+
+          if [[ -z "${RUN_ID}" ]]; then
+            echo "::error::Timed out waiting for selenoid-tests deploy-smoke run."
+            exit 1
+          fi
+
+          echo "tests_run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "Found selenoid-tests run ${RUN_ID}"
+
+          gh run watch "${RUN_ID}" -R "${TESTS_REPO}" || true
+          conclusion="$(gh api "repos/${TESTS_REPO}/actions/runs/${RUN_ID}" --jq '.conclusion // ""')"
+          echo "tests_conclusion=${conclusion}" >> "$GITHUB_OUTPUT"
+
+      - name: Collect Allure links from selenoid-tests
+        id: allure
+        if: always() && steps.wait.outputs.tests_run_id != ''
+        env:
+          GH_TOKEN: ${{ secrets.SELENOID_TESTS_DISPATCH_TOKEN }}
+          TESTS_RUN_ID: ${{ steps.wait.outputs.tests_run_id }}
+        run: |
+          set -euo pipefail
+
+          REPORT_URL="https://qa-guru.github.io/selenoid-tests/reports/${TESTS_RUN_ID}/awesome/index.html"
+          DASHBOARD_URL="https://qa-guru.github.io/selenoid-tests/reports/${TESTS_RUN_ID}/dashboard/index.html"
+          RUN_URL="${{ github.server_url }}/${TESTS_REPO}/actions/runs/${TESTS_RUN_ID}"
+
+          echo "report_url=${REPORT_URL}" >> "$GITHUB_OUTPUT"
+          echo "dashboard_url=${DASHBOARD_URL}" >> "$GITHUB_OUTPUT"
+          echo "run_url=${RUN_URL}" >> "$GITHUB_OUTPUT"
+
+          LOGS="$(gh run view "${TESTS_RUN_ID}" -R "${TESTS_REPO}" --log 2>/dev/null || true)"
+          TESTOPS_URL="$(printf '%s\n' "${LOGS}" | sed -n 's/.*TESTOPS_LAUNCH_URL: \(https:\/\/[^[:space:]]*\).*/\1/p' | tail -1)"
+          if [[ -n "${TESTOPS_URL}" ]]; then
+            echo "testops_url=${TESTOPS_URL}" >> "$GITHUB_OUTPUT"
+          fi
+
+          REPORT_STEP="$(gh api "repos/${TESTS_REPO}/actions/runs/${TESTS_RUN_ID}/jobs" \
+            --jq '.jobs[] | select(.name == "Allure report + TestOps") | .steps[] | select(.name == "Generate Allure 3 report") | .conclusion' \
+            | head -1)"
+          if [[ "${REPORT_STEP}" == "success" ]]; then
+            echo "report_built=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "report_built=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          GATE_FAILED="$(gh api "repos/${TESTS_REPO}/actions/runs/${TESTS_RUN_ID}/jobs" \
+            --jq '.jobs[] | select(.name == "Allure report + TestOps") | .steps[] | select(.name == "Fail if quality gate failed") | .conclusion' \
+            | head -1)"
+          GATE_STEP="$(gh api "repos/${TESTS_REPO}/actions/runs/${TESTS_RUN_ID}/jobs" \
+            --jq '.jobs[] | select(.name == "Allure report + TestOps") | .steps[] | select(.name == "Allure 3 quality gate") | .conclusion' \
+            | head -1)"
+          if [[ "${GATE_FAILED}" == "success" ]]; then
+            echo "quality_gate=failed" >> "$GITHUB_OUTPUT"
+          elif [[ "${GATE_STEP}" == "success" ]]; then
+            echo "quality_gate=passed" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Job summary
+        if: always()
         run: |
           {
             echo "## Trigger selenoid-tests (prod smoke)"
@@ -74,6 +175,31 @@ jobs:
             echo "- Tags slice: \`${{ env.TEST_TAGS }}\`"
             echo "- Go unit: skipped (\`skip_go_unit\`)"
             echo "- Deploy version: \`${{ steps.meta.outputs.version }}\`"
-            echo ""
-            echo "Follow the run in [selenoid-tests Actions](https://github.com/${{ env.TESTS_REPO }}/actions/workflows/selenoid_github-orchestrator.yml)."
+            if [[ -n "${{ steps.allure.outputs.run_url }}" ]]; then
+              echo "- [selenoid-tests run](${{ steps.allure.outputs.run_url }})"
+            else
+              echo "- selenoid-tests run: _не найден (см. [Actions](https://github.com/${{ env.TESTS_REPO }}/actions/workflows/selenoid_github-orchestrator.yml))_"
+            fi
+            if [[ "${{ steps.allure.outputs.report_built }}" == "true" ]]; then
+              echo "- [Allure 3 report](${{ steps.allure.outputs.report_url }})"
+              echo "- [Allure 3 dashboard](${{ steps.allure.outputs.dashboard_url }})"
+            elif [[ -n "${{ steps.wait.outputs.tests_run_id }}" ]]; then
+              echo "- Allure 3 report: _не собран (нет результатов или ошибка генерации)_"
+            fi
+            if [[ -n "${{ steps.allure.outputs.testops_url }}" ]]; then
+              echo "- [Allure TestOps launch](${{ steps.allure.outputs.testops_url }})"
+            elif [[ -n "${{ steps.wait.outputs.tests_run_id }}" ]]; then
+              echo "- Allure TestOps launch: _не загружен (см. selenoid-tests run)_"
+            fi
+            if [[ "${{ steps.allure.outputs.quality_gate }}" == "passed" ]]; then
+              echo "- Allure 3 quality gate: passed"
+            elif [[ "${{ steps.allure.outputs.quality_gate }}" == "failed" ]]; then
+              echo "- Allure 3 quality gate: **failed**"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if prod smoke failed
+        if: always() && steps.wait.outputs.tests_conclusion != '' && steps.wait.outputs.tests_conclusion != 'success'
+        run: |
+          echo "::error::selenoid-tests deploy-smoke concluded with: ${{ steps.wait.outputs.tests_conclusion }}"
+          exit 1
