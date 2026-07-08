@@ -23,6 +23,7 @@
 | UI | `https://selenoid.autotests.cloud/` |
 | Status (UI) | `https://selenoid.autotests.cloud/status` — `.version` = UI, не hub |
 | Hub status | `https://selenoid.autotests.cloud/hub/status` |
+| Hub logs | `https://selenoid.autotests.cloud/logs/{sessionId}` (auth; WebSocket) |
 | Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.1.7 built at …` |
 | Video | `https://selenoid.autotests.cloud/video/` |
 
@@ -130,6 +131,7 @@ SELENOID_VERSION=v2.1.7 SELENOID_UI_VERSION=v2.1.3 CM_VERSION=v2.1.6 ./deploy/de
 | 443 | `/playwright/` | `127.0.0.1:8080` (UI → hub) |
 | 443 | `/status` | `127.0.0.1:8080` (UI JSON; `.version` = UI stamp) |
 | 443 | `/hub/status` | `127.0.0.1:4444` (raw hub capacity) |
+| 443 | `/logs/` | `127.0.0.1:4444` (hub session logs WS; auth; UI → `/ws/logs/`) |
 | 443 | `/wd/hub/status` | через UI → hub (auth; версия hub в message) |
 | 4445 | `/` | `127.0.0.1:4444` (hub) — CI |
 

@@ -126,4 +126,22 @@ else
   exit 1
 fi
 
+echo "=== GET $BASE_URL/logs/unknown-session with auth (expect 400 — WS upgrade required) ==="
+logs_code="$(curl_http_code "$BASE_URL/logs/unknown-session" "${AUTH[@]}")"
+if [[ "$logs_code" == "400" ]]; then
+  echo "OK  /logs/ proxied to hub (HTTP 400)"
+else
+  echo "FAIL /logs/ should proxy to hub with auth (HTTP $logs_code, want 400)" >&2
+  exit 1
+fi
+
+echo "=== GET $BASE_URL/logs/unknown-session without auth (expect 401) ==="
+logs_no_auth="$(curl_http_code "$BASE_URL/logs/unknown-session")"
+if [[ "$logs_no_auth" == "401" ]]; then
+  echo "OK  /logs/ requires auth (HTTP 401)"
+else
+  echo "FAIL /logs/ should require auth (HTTP $logs_no_auth)" >&2
+  exit 1
+fi
+
 echo "Smoke OK: $BASE_URL (auth: $SELENOID_USER:***)"
