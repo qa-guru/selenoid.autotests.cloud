@@ -9,6 +9,7 @@ CM_URL="${CM_URL:-https://github.com/qa-guru/cm/releases/latest/download/cm_linu
 VERSION="${SELENOID_VERSION:-v2.1.8}"
 UI_VERSION="${SELENOID_UI_VERSION:-v2.1.7}"
 CM_VERSION="${CM_VERSION:-v2.1.7}"
+VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
 GITHUB_OWNER="${GITHUB_OWNER:-qa-guru}"
 version_args=()
 if [[ -n "$VERSION" ]]; then
@@ -92,7 +93,7 @@ while read -r img; do
   docker pull "$img"
   docker image inspect "$img" --format '{{.RepoTags}} {{.Id}} {{.Created}}' 2>/dev/null || true
 done < <(pull_images)
-docker pull selenoid/video-recorder:latest-release
+docker pull "${VIDEO_RECORDER_IMAGE}"
 
 mkdir -p "$CONFIG_DIR/video" "$CONFIG_DIR/logs"
 
@@ -106,7 +107,7 @@ nohup "${CONFIG_DIR}/bin/selenoid" \
   -limit 20 \
   -container-network selenoid \
   -video-output-dir "${CONFIG_DIR}/video/" \
-  -video-recorder-image selenoid/video-recorder:latest-release \
+  -video-recorder-image "${VIDEO_RECORDER_IMAGE}" \
   -log-output-dir "${CONFIG_DIR}/logs/" \
   -listen :4444 \
   >> "${CONFIG_DIR}/logs/selenoid.log" 2>&1 &

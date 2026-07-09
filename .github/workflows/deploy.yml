@@ -57,6 +57,7 @@ jobs:
             # UI/CM tags are independent of hub; pin to tags that have release assets.
             export SELENOID_UI_VERSION="${SELENOID_UI_VERSION:-v2.1.7}"
             export CM_VERSION="${CM_VERSION:-v2.1.7}"
+            export VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
             export SELENOID_CONFIG_DIR="${{ vars.SELENOID_CONFIG_DIR }}"
             export SELENOID_CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
             export CM_BIN="$HOME/cm"

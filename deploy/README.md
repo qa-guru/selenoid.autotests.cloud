@@ -27,7 +27,7 @@
 | Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.1.8 built at …` |
 | Video | `https://selenoid.autotests.cloud/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v2.1.8**, UI **v2.1.7**, cm **v2.1.7**.
+Текущие pin’ы `deploy.sh`: hub **v2.1.8**, UI **v2.1.7**, cm **v2.1.7**, video-recorder **`qaguru/video-recorder:latest`**.
 
 ### Переменные для тестов
 
