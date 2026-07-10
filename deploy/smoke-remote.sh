@@ -158,7 +158,8 @@ else
 fi
 
 echo "=== GET $BASE_URL/error with auth (expect 404 — invalid session JSON) ==="
-error_json="$(curl_retry "$BASE_URL/error" -fsSL "${AUTH[@]}")"
+# Hub returns HTTP 404 with valid JSON — do not use curl -f here.
+error_json="$(curl -sSL "${AUTH[@]}" "$BASE_URL/error" 2>/dev/null || true)"
 echo "$error_json" | (command -v jq >/dev/null && jq . || cat)
 if jq -e '.value.error == "invalid session id"' <<<"$error_json" >/dev/null; then
   echo "OK  /error proxied to hub (invalid session JSON)"
