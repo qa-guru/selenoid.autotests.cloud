@@ -110,10 +110,23 @@ fi
 ui_version="$(jq -r '.version // empty' <<<"$status_json")"
 EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v2.2.0}}"
 EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION#v}"
-if [[ "$ui_version" == v${EXPECTED_UI_VERSION}* ]]; then
+# UI /status.version is gitRevision[buildStamp]. Release assets may embed a post-tag
+# commit hash (e.g. v2.2.0 binary built at a1803f0) — accept via SELENOID_UI_GIT_REVISION.
+UI_REV_OK=false
+if [[ "$ui_version" == v${EXPECTED_UI_VERSION}* ]] || [[ "$ui_version" == ${EXPECTED_UI_VERSION}* ]]; then
+  UI_REV_OK=true
+fi
+if [[ "$UI_REV_OK" != true ]]; then
+  UI_ALT="${SELENOID_UI_GIT_REVISION:-${GIT_REVISION:-}}"
+  UI_ALT="${UI_ALT#v}"
+  if [[ -n "$UI_ALT" && "$ui_version" == ${UI_ALT}* ]]; then
+    UI_REV_OK=true
+  fi
+fi
+if [[ "$UI_REV_OK" == true ]]; then
   echo "OK  UI /status.version: $ui_version"
 else
-  echo "FAIL UI version: want v${EXPECTED_UI_VERSION}*, got: ${ui_version:-<empty>}" >&2
+  echo "FAIL UI version: want v${EXPECTED_UI_VERSION}* (or SELENOID_UI_GIT_REVISION), got: ${ui_version:-<empty>}" >&2
   exit 1
 fi
 

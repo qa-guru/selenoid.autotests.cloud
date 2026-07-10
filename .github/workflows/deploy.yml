@@ -78,6 +78,7 @@ jobs:
             # Force UI/CM pins even if the host already exported an empty-asset tag.
             export SELENOID_UI_VERSION=v2.2.0
             export CM_VERSION=v2.2.0
+            export GIT_REVISION="${GIT_REVISION:-v2.2.0}"
             bash "$STAGING/deploy-selenoid.sh"
 
       - name: Smoke test (public)
@@ -85,6 +86,10 @@ jobs:
           SELENOID_USER: user1
           SELENOID_PASSWORD: "1234"
           SELENOID_PUBLIC_URL: ${{ vars.SELENOID_PUBLIC_URL }}
+          SELENOID_VERSION: ${{ steps.meta.outputs.tag || 'v2.2.0' }}
+          SELENOID_UI_VERSION: v2.2.0
+          # v2.2.0 release asset rebuilt post-tag (ci release dispatch)
+          SELENOID_UI_GIT_REVISION: a1803f0
         run: |
           if [[ -z "${SELENOID_PUBLIC_URL:-}" ]]; then
             echo "SELENOID_PUBLIC_URL is not set — skip public smoke test" >&2
