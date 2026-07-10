@@ -24,6 +24,8 @@
 | Status (UI) | `https://selenoid.autotests.cloud/status` — `.version` = UI, не hub |
 | Hub status | `https://selenoid.autotests.cloud/hub/status` |
 | Hub logs | `https://selenoid.autotests.cloud/logs/{sessionId}` (auth; WebSocket) |
+| Hub error | `https://selenoid.autotests.cloud/error` (auth; invalid session JSON) |
+| Hub VNC | `https://selenoid.autotests.cloud/vnc/{sessionId}` (auth; WebSocket) |
 | Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.2.0 built at …` |
 | Video | `https://selenoid.autotests.cloud/video/` |
 
@@ -132,6 +134,8 @@ SELENOID_VERSION=v2.2.0 SELENOID_UI_VERSION=v2.2.0 CM_VERSION=v2.2.0 ./deploy/de
 | 443 | `/status` | `127.0.0.1:8080` (UI JSON; `.version` = UI stamp) |
 | 443 | `/hub/status` | `127.0.0.1:4444` (raw hub capacity) |
 | 443 | `/logs/` | `127.0.0.1:4444` (hub session logs WS; auth; UI → `/ws/logs/`) |
+| 443 | `/error` | `127.0.0.1:4444` (hub invalid-session JSON; auth) |
+| 443 | `/vnc/` | `127.0.0.1:4444` (hub VNC WS; auth; UI → `/ws/vnc/`) |
 | 443 | `/wd/hub/status` | через UI → hub (auth; версия hub в message) |
 | 4445 | `/` | `127.0.0.1:4444` (hub) — CI |
 

@@ -144,4 +144,41 @@ else
   exit 1
 fi
 
+echo "=== GET $BASE_URL/error with auth (expect 404 — invalid session JSON) ==="
+error_json="$(curl_retry "$BASE_URL/error" -fsSL "${AUTH[@]}")"
+echo "$error_json" | (command -v jq >/dev/null && jq . || cat)
+if jq -e '.value.error == "invalid session id"' <<<"$error_json" >/dev/null; then
+  echo "OK  /error proxied to hub (invalid session JSON)"
+else
+  echo "FAIL /error should proxy to hub invalid-session JSON" >&2
+  exit 1
+fi
+
+echo "=== GET $BASE_URL/error without auth (expect 401) ==="
+error_no_auth="$(curl_http_code "$BASE_URL/error")"
+if [[ "$error_no_auth" == "401" ]]; then
+  echo "OK  /error requires auth (HTTP 401)"
+else
+  echo "FAIL /error should require auth (HTTP $error_no_auth)" >&2
+  exit 1
+fi
+
+echo "=== GET $BASE_URL/vnc/unknown-session with auth (expect 400 — WS upgrade required) ==="
+vnc_code="$(curl_http_code "$BASE_URL/vnc/unknown-session" "${AUTH[@]}")"
+if [[ "$vnc_code" == "400" ]]; then
+  echo "OK  /vnc/ proxied to hub (HTTP 400)"
+else
+  echo "FAIL /vnc/ should proxy to hub with auth (HTTP $vnc_code, want 400)" >&2
+  exit 1
+fi
+
+echo "=== GET $BASE_URL/vnc/unknown-session without auth (expect 401) ==="
+vnc_no_auth="$(curl_http_code "$BASE_URL/vnc/unknown-session")"
+if [[ "$vnc_no_auth" == "401" ]]; then
+  echo "OK  /vnc/ requires auth (HTTP 401)"
+else
+  echo "FAIL /vnc/ should require auth (HTTP $vnc_no_auth)" >&2
+  exit 1
+fi
+
 echo "Smoke OK: $BASE_URL (auth: $SELENOID_USER:***)"

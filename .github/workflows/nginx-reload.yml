@@ -45,4 +45,14 @@ jobs:
               echo "FAIL: ${BASE_URL}/logs/unknown-session without auth want HTTP 401, got ${logs_no_auth}" >&2
               exit 1
             fi
-            echo "OK: nginx reload smoke passed (/status, /logs/ auth=400, no-auth=401)"
+            error_code="$(curl -s -o /dev/null -w '%{http_code}' -u 'user1:1234' "${BASE_URL}/error")"
+            if [[ "$error_code" != "404" ]]; then
+              echo "FAIL: ${BASE_URL}/error with auth want HTTP 404, got ${error_code}" >&2
+              exit 1
+            fi
+            vnc_code="$(curl -s -o /dev/null -w '%{http_code}' -u 'user1:1234' "${BASE_URL}/vnc/unknown-session")"
+            if [[ "$vnc_code" != "400" ]]; then
+              echo "FAIL: ${BASE_URL}/vnc/unknown-session with auth want HTTP 400, got ${vnc_code}" >&2
+              exit 1
+            fi
+            echo "OK: nginx reload smoke passed (/status, /logs/, /error, /vnc/)"
