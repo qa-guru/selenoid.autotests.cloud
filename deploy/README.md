@@ -24,10 +24,10 @@
 | Status (UI) | `https://selenoid.autotests.cloud/status` — `.version` = UI, не hub |
 | Hub status | `https://selenoid.autotests.cloud/hub/status` |
 | Hub logs | `https://selenoid.autotests.cloud/logs/{sessionId}` (auth; WebSocket) |
-| Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.1.8 built at …` |
+| Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.2.0 built at …` |
 | Video | `https://selenoid.autotests.cloud/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v2.1.8**, UI **v2.1.7**, cm **v2.1.7**, video-recorder **`qaguru/video-recorder:latest`**.
+Текущие pin’ы `deploy.sh`: hub **v2.2.0**, UI **v2.2.0**, cm **v2.2.0**, video-recorder **`qaguru/video-recorder:latest`**.
 
 ### Переменные для тестов
 
@@ -104,17 +104,17 @@ chmod +x deploy.sh
 ./deploy/remote-update.sh
 ```
 
-Pin версии (опционально; default hub **v2.1.8**, UI **v2.1.7**, cm **v2.1.7**):
+Pin версии (опционально; default hub **v2.2.0**, UI **v2.2.0**, cm **v2.2.0**):
 
 ```bash
-SELENOID_VERSION=v2.1.8 SELENOID_UI_VERSION=v2.1.7 CM_VERSION=v2.1.7 ./deploy/deploy.sh
+SELENOID_VERSION=v2.2.0 SELENOID_UI_VERSION=v2.2.0 CM_VERSION=v2.2.0 ./deploy/deploy.sh
 ```
 
 ### Проверка
 
 ```bash
 ./deploy/smoke-remote.sh https://selenoid.autotests.cloud
-# hub revision assertion (default EXPECTED_HUB_VERSION=v2.1.8):
+# hub revision assertion (default EXPECTED_HUB_VERSION=v2.2.0):
 # curl -u user1:1234 -fsSL …/wd/hub/status | jq -r .value.message
 ```
 
