@@ -56,6 +56,28 @@ EOF
 chmod 440 "$SUDOERS"
 visudo -cf "$SUDOERS"
 
+echo "=== passwordless sudo for systemd-managed hub ==="
+HUB_SUDOERS="/etc/sudoers.d/${DEPLOY_USER}-selenoid-hub"
+cat >"$HUB_SUDOERS" <<EOF
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/install -m 644 /tmp/selenoid-hub.service /etc/systemd/system/selenoid-hub.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable selenoid-hub.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable selenoid-hub.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl start selenoid-hub.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop selenoid-hub.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart selenoid-hub.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl status selenoid-hub.service
+EOF
+chmod 440 "$HUB_SUDOERS"
+visudo -cf "$HUB_SUDOERS"
+
+if [[ -f "$SCRIPT_DIR/selenoid-hub.service" ]]; then
+  echo "=== install + enable systemd unit selenoid-hub.service (autostart on reboot) ==="
+  install -m 644 "$SCRIPT_DIR/selenoid-hub.service" /etc/systemd/system/selenoid-hub.service
+  systemctl daemon-reload
+  systemctl enable selenoid-hub.service
+fi
+
 echo "Bootstrap complete."
 echo "  user:   $DEPLOY_USER"
 echo "  cm:     $CM_BIN"

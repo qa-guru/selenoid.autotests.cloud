@@ -73,6 +73,8 @@ jobs:
             export NGINX_SYNC_SCRIPT=/tmp/sync-nginx.sh
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/browsers-production.json" -o "$STAGING/browsers-production.json"
             export BROWSERS_PRODUCTION="$STAGING/browsers-production.json"
+            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/selenoid-hub.service" -o /tmp/selenoid-hub.service
+            export HUB_UNIT_SRC=/tmp/selenoid-hub.service
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/deploy.sh" -o "$STAGING/deploy-selenoid.sh"
             chmod +x "$STAGING/deploy-selenoid.sh"
             # Force UI/CM pins even if the host already exported an empty-asset tag.

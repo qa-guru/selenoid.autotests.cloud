@@ -97,7 +97,7 @@ fi
 echo "OK  /wd/hub with auth (ready)"
 
 # /status.version is selenoid-ui build stamp; hub revision lives in W3C /wd/hub/status.
-EXPECTED_HUB_VERSION="${EXPECTED_HUB_VERSION:-${SELENOID_VERSION:-v2.2.1}}"
+EXPECTED_HUB_VERSION="${EXPECTED_HUB_VERSION:-${SELENOID_VERSION:-v2.3.0}}"
 EXPECTED_HUB_VERSION="${EXPECTED_HUB_VERSION#v}"
 hub_msg="$(jq -r '.value.message // empty' <<<"$wd_json")"
 if [[ "$hub_msg" == *"Selenoid v${EXPECTED_HUB_VERSION}"* ]]; then
@@ -108,7 +108,7 @@ else
 fi
 
 ui_version="$(jq -r '.version // empty' <<<"$status_json")"
-EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v2.2.1}}"
+EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v2.3.0}}"
 EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION#v}"
 # UI /status.version is gitRevision[buildStamp]. Release assets may embed a post-tag
 # commit hash (e.g. v2.2.0 binary built at a1803f0) — accept via SELENOID_UI_GIT_REVISION.

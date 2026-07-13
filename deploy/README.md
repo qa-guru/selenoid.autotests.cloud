@@ -26,10 +26,10 @@
 | Hub logs | `https://selenoid.autotests.cloud/logs/{sessionId}` (auth; WebSocket) |
 | Hub error | `https://selenoid.autotests.cloud/error` (auth; invalid session JSON) |
 | Hub VNC | `https://selenoid.autotests.cloud/vnc/{sessionId}` (auth; WebSocket) |
-| Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.2.1 built at …` |
+| Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.3.0 built at …` |
 | Video | `https://selenoid.autotests.cloud/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v2.2.1**, UI **v2.2.1**, cm **v2.2.1**, video-recorder **`qaguru/video-recorder:latest`**.
+Текущие pin’ы `deploy.sh`: hub **v2.3.0**, UI **v2.3.0**, cm **v2.3.0**, video-recorder **`qaguru/video-recorder:latest`**.
 
 ### Переменные для тестов
 
@@ -106,17 +106,17 @@ chmod +x deploy.sh
 ./deploy/remote-update.sh
 ```
 
-Pin версии (опционально; default hub **v2.2.1**, UI **v2.2.1**, cm **v2.2.1**):
+Pin версии (опционально; default hub **v2.3.0**, UI **v2.3.0**, cm **v2.3.0**):
 
 ```bash
-SELENOID_VERSION=v2.2.1 SELENOID_UI_VERSION=v2.2.1 CM_VERSION=v2.2.1 ./deploy/deploy.sh
+SELENOID_VERSION=v2.3.0 SELENOID_UI_VERSION=v2.3.0 CM_VERSION=v2.3.0 ./deploy/deploy.sh
 ```
 
 ### Проверка
 
 ```bash
 ./deploy/smoke-remote.sh https://selenoid.autotests.cloud
-# hub revision assertion (default EXPECTED_HUB_VERSION=v2.2.1):
+# hub revision assertion (default EXPECTED_HUB_VERSION=v2.3.0):
 # curl -u user1:1234 -fsSL …/wd/hub/status | jq -r .value.message
 ```
 
@@ -223,7 +223,8 @@ sudo systemctl enable --now selenoid-hub.service
 
 | Версия | Документация |
 |--------|--------------|
-| v2.2.1 | [RELEASE_v2.2.1.md](RELEASE_v2.2.1.md) — **stack v2.2.1 prod pin** |
+| v2.3.0 | [RELEASE_v2.3.0.md](RELEASE_v2.3.0.md) — **stack v2.3.0 prod pin** (Engine 29 / API 1.55, React 18 / Vite 6) |
+| v2.2.1 | [RELEASE_v2.2.1.md](RELEASE_v2.2.1.md) — **прежний prod pin** (Engine 26.1 / API 1.45) |
 | v2.2.0 | [RELEASE_v2.2.0.md](RELEASE_v2.2.0.md) — **WebDriver chrome catalog** |
 | v2.1.0 | [RELEASE_v2.1.0.md](RELEASE_v2.1.0.md) — **prod deploy repo** |
 | v2.0.9 | [RELEASE_v2.0.9.md](RELEASE_v2.0.9.md) — **docs refresh** |
