@@ -61,6 +61,9 @@ echo "=== stop cm-managed services ==="
 "$CM_BIN" selenoid stop -c "$CONFIG_DIR" 2>/dev/null || true
 "$CM_BIN" selenoid-ui stop -c "$CONFIG_DIR" 2>/dev/null || true
 
+echo "=== stop systemd-managed hub (if any) before binary refresh ==="
+sudo -n systemctl stop selenoid-hub.service 2>/dev/null || true
+
 if pgrep -f "${CONFIG_DIR}/bin/selenoid" >/dev/null 2>&1; then
   pkill -f "${CONFIG_DIR}/bin/selenoid" || true
   sleep 1
@@ -97,20 +100,61 @@ docker pull "${VIDEO_RECORDER_IMAGE}"
 
 mkdir -p "$CONFIG_DIR/video" "$CONFIG_DIR/logs"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+install -m 755 "${SCRIPT_DIR}/cleanup-videos.sh" "${CONFIG_DIR}/bin/cleanup-videos.sh"
+install -m 755 "${SCRIPT_DIR}/video-retention.sh" "${CONFIG_DIR}/bin/video-retention.sh"
+
 echo "=== docker network selenoid ==="
 docker network inspect selenoid >/dev/null 2>&1 || docker network create selenoid
 
 echo "=== start hub (native binary on host — hub-in-docker breaks browser port bindings) ==="
-export DOCKER_API_VERSION="${DOCKER_API_VERSION:-1.45}"
-nohup "${CONFIG_DIR}/bin/selenoid" \
-  -conf "${CONFIG_DIR}/browsers.json" \
-  -limit 20 \
-  -container-network selenoid \
-  -video-output-dir "${CONFIG_DIR}/video/" \
-  -video-recorder-image "${VIDEO_RECORDER_IMAGE}" \
-  -log-output-dir "${CONFIG_DIR}/logs/" \
-  -listen :4444 \
-  >> "${CONFIG_DIR}/logs/selenoid.log" 2>&1 &
+# Do NOT pin DOCKER_API_VERSION: moby client auto-negotiates with the engine
+# (Docker Engine 29.x → API 1.55). A stale pin (e.g. 1.45) is unnecessary.
+unset DOCKER_API_VERSION || true
+
+# Remove any stale cm-managed hub-in-docker container that would hold :4444.
+docker stop selenoid 2>/dev/null || true
+docker rm selenoid 2>/dev/null || true
+
+HUB_UNIT_SRC="${HUB_UNIT_SRC:-/tmp/selenoid-hub.service}"
+HUB_UNIT_DEST="/etc/systemd/system/selenoid-hub.service"
+hub_via_systemd=false
+if [[ -f "$HUB_UNIT_SRC" ]] && sudo -n true 2>/dev/null; then
+  echo "--- install + enable systemd unit selenoid-hub.service (autostart on reboot) ---"
+  if sudo -n install -m 644 "$HUB_UNIT_SRC" "$HUB_UNIT_DEST" \
+    && sudo -n systemctl daemon-reload \
+    && sudo -n systemctl enable selenoid-hub.service \
+    && sudo -n systemctl restart selenoid-hub.service; then
+    hub_via_systemd=true
+    echo "OK  hub managed by systemd — :4444 comes up automatically after reboot"
+  else
+    echo "WARN: systemd unit install failed — falling back to nohup (no autostart)" >&2
+  fi
+fi
+
+if [[ "$hub_via_systemd" != true ]] && systemctl is-active --quiet selenoid-hub.service 2>/dev/null; then
+  # Unit exists and owns :4444 but we lack sudo to manage it — do NOT nohup
+  # (that would pkill the systemd-managed process and fight Restart=always).
+  echo "--- selenoid-hub.service already active; not starting nohup ---"
+  if ! sudo -n systemctl restart selenoid-hub.service 2>/dev/null; then
+    echo "WARN: apply new browsers.json/binary manually: sudo systemctl restart selenoid-hub.service" >&2
+  fi
+  hub_via_systemd=true
+fi
+
+if [[ "$hub_via_systemd" != true ]]; then
+  echo "--- start hub via nohup (no reboot autostart; install selenoid-hub.service for that) ---" >&2
+  pkill -f "${CONFIG_DIR}/bin/selenoid" 2>/dev/null || true
+  nohup "${CONFIG_DIR}/bin/selenoid" \
+    -conf "${CONFIG_DIR}/browsers.json" \
+    -limit 20 \
+    -container-network selenoid \
+    -video-output-dir "${CONFIG_DIR}/video/" \
+    -video-recorder-image "${VIDEO_RECORDER_IMAGE}" \
+    -log-output-dir "${CONFIG_DIR}/logs/" \
+    -listen :4444 \
+    >> "${CONFIG_DIR}/logs/selenoid.log" 2>&1 &
+fi
 
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
   if curl -sf "http://127.0.0.1:4444/status" >/dev/null 2>&1; then

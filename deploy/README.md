@@ -157,7 +157,22 @@ sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /opt/selenoid/bin/sync-nginx.sh
 
 ### Очистка видео на сервере
 
-Скрипт [`cleanup-videos.sh`](cleanup-videos.sh) удаляет `.mp4` старше 6 месяцев из `/opt/selenoid/video`. На проде — в root crontab (ежемесячно).
+Скрипты в `deploy/`:
+
+| Скрипт | Назначение | Cron (рекомендация) |
+|--------|------------|---------------------|
+| [`video-retention.sh`](video-retention.sh) | Удаляет файлы старше **14 дней** (`SELENOID_VIDEO_RETENTION_DAYS`) | `0 3 * * *` (ежедневно) |
+| [`cleanup-videos.sh`](cleanup-videos.sh) | Глубокая очистка `.mp4` старше **6 месяцев** (если `RETENTION_DAYS` не задан) | `0 4 1 * *` (ежемесячно) |
+
+`deploy.sh` копирует оба скрипта в `/opt/selenoid/bin/`. Установка cron (пользователь `selenoid`):
+
+```bash
+(crontab -l 2>/dev/null | grep -v video-retention.sh | grep -v cleanup-videos.sh
+ echo "0 3 * * * /opt/selenoid/bin/video-retention.sh"
+ echo "0 4 1 * * SELENOID_VIDEO_RETENTION_MONTHS=6 /opt/selenoid/bin/cleanup-videos.sh") | crontab -
+```
+
+Лог: `/opt/selenoid/logs/video-cleanup.log`.
 
 ---
 
@@ -171,9 +186,36 @@ sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /opt/selenoid/bin/sync-nginx.sh
   video/
   logs/
 /home/selenoid/cm       # бинарник cm (только у пользователя selenoid)
+/etc/systemd/system/selenoid-hub.service   # автозапуск hub (native binary)
 ```
 
 Деплой и `cm` — **только от пользователя `selenoid`**, не от root и не из home других пользователей.
+
+---
+
+## Автозапуск hub (systemd)
+
+Hub — **native-бинарник на хосте** (не hub-in-docker: контейнерный hub ломает port bindings браузеров). Жизненным циклом управляет systemd-unit [`selenoid-hub.service`](selenoid-hub.service): `:4444` поднимается автоматически после reboot, `Restart=always`, зависит от `docker.service`.
+
+`deploy.sh` ставит и включает unit сам, если доступен `sudo -n` (иначе — fallback на `nohup` без автозапуска). Unit **не** пиннит `DOCKER_API_VERSION`: moby-клиент авто-договаривается с Docker Engine 29.x (API 1.55).
+
+```bash
+sudo systemctl status selenoid-hub.service
+sudo systemctl restart selenoid-hub.service     # применить новый browsers.json/бинарник
+curl -s http://127.0.0.1:4444/status            # total/used
+```
+
+Ручная установка unit (если `deploy.sh` не смог из-за sudo):
+
+```bash
+sudo install -m 644 deploy/selenoid-hub.service /etc/systemd/system/selenoid-hub.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now selenoid-hub.service
+```
+
+## WebDriver сессии: Xvfb (ENABLE_VIDEO)
+
+Образы `qaguru/webdriver-*` запускают Chrome/Firefox/Edge **не в headless** и требуют X-сервер, но warm-entrypoint поднимает `Xvfb` только при VNC/video. Поэтому в [`browsers-production.json`](browsers-production.json) у всех WebDriver-версий задан `"env": ["ENABLE_VIDEO=true"]` — это форсит `Xvfb` (без x11vnc, работает и для `-min`). Без него обычная сессия падает: `Missing X server or $DISPLAY` → `Chrome instance exited`. Playwright-образы правки не требуют. Селеноид добавляет `env` из browsers.json **после** своих `ENABLE_VNC/VIDEO`, поэтому значение всегда побеждает.
 
 ---
 
