@@ -241,18 +241,25 @@ curl -sf "http://127.0.0.1:4444/status" | (command -v jq >/dev/null && jq . || c
 echo
 
 echo "=== UI backend status ==="
+# Do not use shared /tmp for body — another user (e.g. qaguru) may own the file
+# and curl exit 23 then appends "000" via || → HTTP "200000".
+UI_STATUS_FILE="${CONFIG_DIR}/logs/ui-status.$$.json"
 ui_json=""
 ui_http="000"
 for attempt in 1 2 3 4 5 6; do
-  ui_http="$(curl -sS -o /tmp/ui-status.json -w '%{http_code}' "http://127.0.0.1:8080/status" 2>/dev/null || echo "000")"
+  ui_http="000"
+  if curl -sS -o "$UI_STATUS_FILE" -w '%{http_code}' "http://127.0.0.1:8080/status" >"${UI_STATUS_FILE}.code" 2>/dev/null; then
+    ui_http="$(tr -d '[:space:]' <"${UI_STATUS_FILE}.code")"
+  fi
+  rm -f "${UI_STATUS_FILE}.code"
   if [[ "$ui_http" == "200" ]]; then
-    ui_json="$(cat /tmp/ui-status.json)"
+    ui_json="$(cat "$UI_STATUS_FILE")"
     break
   fi
   echo "UI /status HTTP ${ui_http} (attempt ${attempt}/6), waiting..." >&2
   sleep 2
 done
-rm -f /tmp/ui-status.json
+rm -f "$UI_STATUS_FILE" "${UI_STATUS_FILE}.code"
 if [[ "$ui_http" != "200" || -z "$ui_json" ]]; then
   echo "FAIL: selenoid-ui /status HTTP ${ui_http}" >&2
   docker logs --tail 40 selenoid-ui 2>&1 || true
