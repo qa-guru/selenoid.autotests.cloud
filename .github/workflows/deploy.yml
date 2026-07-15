@@ -67,7 +67,7 @@ jobs:
             if [[ -n "$TAG" ]]; then
               export SELENOID_VERSION="$TAG"
             fi
-            export SELENOID_UI_VERSION="${SELENOID_UI_VERSION:-v2.3.8}"
+            export SELENOID_UI_VERSION="${SELENOID_UI_VERSION:-v2.3.9}"
             export CM_VERSION="${CM_VERSION:-v2.3.0}"
             export VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
             export SELENOID_CONFIG_DIR="${{ vars.SELENOID_CONFIG_DIR }}"
@@ -86,7 +86,7 @@ jobs:
             export BROWSERS_PRODUCTION="$STAGING/browsers-production.json"
             export HUB_UNIT_SRC=/tmp/selenoid-hub.service
             # Force UI/CM pins even if the host already exported an empty-asset tag.
-            export SELENOID_UI_VERSION=v2.3.8
+            export SELENOID_UI_VERSION=v2.3.9
             export CM_VERSION=v2.3.0
             export GIT_REVISION="${GIT_REVISION:-v2.3.0}"
             # Prove we are on the optional-flag deploy.sh (not a stale curl cache).
@@ -99,7 +99,7 @@ jobs:
           SELENOID_PASSWORD: "aAb_-4gs53FD"
           SELENOID_PUBLIC_URL: ${{ vars.SELENOID_PUBLIC_URL }}
           SELENOID_VERSION: ${{ steps.meta.outputs.tag || 'v2.3.0' }}
-          SELENOID_UI_VERSION: v2.3.8
+          SELENOID_UI_VERSION: v2.3.9
         run: |
           if [[ -z "${SELENOID_PUBLIC_URL:-}" ]]; then
             echo "SELENOID_PUBLIC_URL is not set — skip public smoke test" >&2
