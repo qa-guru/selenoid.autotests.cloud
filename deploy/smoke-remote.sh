@@ -79,8 +79,11 @@ done
 status_playwright_key="$(jq -r '.playwrightAccessKey // empty' <<<"$status_json")"
 if [[ "$status_playwright_key" == "$PLAYWRIGHT_PUBLIC_ACCESS_KEY" ]]; then
   echo "OK  /status.playwrightAccessKey matches public guest SSOT"
+elif [[ -z "$status_playwright_key" ]]; then
+  # v2.3.0 UI binary has no -playwright-access-key; nginx map still gates /playwright/.
+  echo "WARN /status.playwrightAccessKey empty (UI binary without flag) — nginx accessKey checks below"
 else
-  echo "FAIL /status.playwrightAccessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_playwright_key:-<empty>}" >&2
+  echo "FAIL /status.playwrightAccessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_playwright_key}" >&2
   exit 1
 fi
 
