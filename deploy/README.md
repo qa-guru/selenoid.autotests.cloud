@@ -6,7 +6,7 @@
 |------|------------------|
 | `/` (UI) | `https://selenoid.autotests.cloud` |
 | `/wd/hub` | `https://selenoid.autotests.cloud/wd/hub` |
-| `/playwright/` | Create Session в UI или `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?enableVNC=true&enableVideo=true` |
+| `/playwright/` | Create Session в UI или `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true` |
 | `/status` | UI-shaped JSON (`.state`, `.version` = **selenoid-ui** stamp) |
 | `/hub/status` | raw hub capacity (total/used/browsers; без `.version`) |
 | `/wd/hub/status` | W3C hub status — **версия hub** в `.value.message` (basic auth) |
@@ -19,7 +19,8 @@
 | Назначение | URL |
 |------------|-----|
 | Selenium | `https://selenoid.autotests.cloud/wd/hub` |
-| Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?enableVNC=true&enableVideo=true` |
+| Playwright (public) | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true` |
+| Playwright (students) | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?accessKey=user1:1234&enableVNC=true&enableVideo=true` |
 | UI | `https://selenoid.autotests.cloud/` |
 | Status (UI) | `https://selenoid.autotests.cloud/status` — `.version` = UI, не hub |
 | Hub status | `https://selenoid.autotests.cloud/hub/status` |
@@ -31,11 +32,22 @@
 
 Текущие pin’ы `deploy.sh`: hub **v2.3.0**, UI **v2.3.0**, cm **v2.3.0**, video-recorder **`qaguru/video-recorder:latest`**.
 
+### Демо-доступ
+
+Обе связки работают на обоих протоколах:
+
+| API | students | public guest |
+|-----|----------|--------------|
+| WebDriver `/wd/hub` (Basic Auth) | `user1` / `1234` | `qa_engineer` / `aAb_-4gs53FD` |
+| Playwright `/playwright/` (query `accessKey`) | `user1:1234` | `qa_engineer:aAb_-4gs53FD` (`#` → `%23` в URL) |
+
+WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (обоих пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query, т.к. браузерный WS не умеет Basic Auth: hub-ключи в `/opt/selenoid/playwright-access.env` → `-playwright-access-key` (systemd); UI получает public key через свой flag → Create Session / сниппеты подставляют его из `/status.playwrightAccessKey`.
+
 ### Переменные для тестов
 
 ```bash
 export SELENOID_URL=https://selenoid.autotests.cloud/wd/hub
-export PW_TEST_CONNECT_WS_ENDPOINT=wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?enableVNC=true&enableVideo=true
+export PW_TEST_CONNECT_WS_ENDPOINT='wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true'
 export SELENOID_HOST=selenoid.autotests.cloud
 ```
 
@@ -185,6 +197,7 @@ sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /opt/selenoid/bin/sync-nginx.sh
   bin/selenoid-ui
   video/
   logs/
+  playwright-access.env
 /home/selenoid/cm       # бинарник cm (только у пользователя selenoid)
 /etc/systemd/system/selenoid-hub.service   # автозапуск hub (native binary)
 ```

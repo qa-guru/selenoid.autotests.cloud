@@ -11,6 +11,9 @@ BASE_URL="${BASE_URL%/}"
 SELENOID_USER="${SELENOID_USER:-user1}"
 SELENOID_PASSWORD="${SELENOID_PASSWORD:-1234}"
 AUTH=(-u "${SELENOID_USER}:${SELENOID_PASSWORD}")
+PLAYWRIGHT_PUBLIC_KEY_DEFAULT='qa_engineer:aAb_-4gs53FD'
+PLAYWRIGHT_STUDENT_ACCESS_KEY="${PLAYWRIGHT_STUDENT_ACCESS_KEY:-user1:1234}"
+PLAYWRIGHT_PUBLIC_ACCESS_KEY="${PLAYWRIGHT_PUBLIC_ACCESS_KEY:-$PLAYWRIGHT_PUBLIC_KEY_DEFAULT}"
 CURL_RETRIES="${CURL_RETRIES:-5}"
 CURL_RETRY_DELAY="${CURL_RETRY_DELAY:-3}"
 PLAYWRIGHT_SMOKE_TIMEOUT="${PLAYWRIGHT_SMOKE_TIMEOUT:-20}"
@@ -28,6 +31,10 @@ curl_retry() {
     fi
   done
   return 1
+}
+
+urlencode() {
+  python -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"
 }
 
 curl_http_code() {
@@ -130,14 +137,26 @@ else
   exit 1
 fi
 
-echo "=== GET $BASE_URL/playwright/... without auth (expect 400 — WS upgrade required) ==="
-pw_code="$(curl_http_code "$BASE_URL/playwright/playwright-chromium/1.61.1" --max-time "$PLAYWRIGHT_SMOKE_TIMEOUT")"
-if [[ "$pw_code" == "400" || "$pw_code" == "426" ]]; then
-  echo "OK  /playwright/ is public for UI WebSocket (HTTP $pw_code)"
+echo "=== GET $BASE_URL/playwright/... without accessKey (expect 401) ==="
+pw_no_key="$(curl_http_code "$BASE_URL/playwright/playwright-chromium/1.61.1" --max-time "$PLAYWRIGHT_SMOKE_TIMEOUT")"
+if [[ "$pw_no_key" == "401" ]]; then
+  echo "OK  /playwright/ requires accessKey at nginx edge (HTTP 401)"
 else
-  echo "FAIL /playwright/ should be reachable without auth for UI (HTTP $pw_code, want 400)" >&2
+  echo "FAIL /playwright/ should require accessKey (HTTP $pw_no_key, want 401)" >&2
   exit 1
 fi
+
+echo "=== GET $BASE_URL/playwright/... with student/public accessKey (expect 400 — WS upgrade required) ==="
+for key in "$PLAYWRIGHT_STUDENT_ACCESS_KEY" "$PLAYWRIGHT_PUBLIC_ACCESS_KEY"; do
+  encoded_key="$(urlencode "$key")"
+  pw_code="$(curl_http_code "$BASE_URL/playwright/playwright-chromium/1.61.1?accessKey=${encoded_key}" --max-time "$PLAYWRIGHT_SMOKE_TIMEOUT")"
+  if [[ "$pw_code" == "400" || "$pw_code" == "426" ]]; then
+    echo "OK  /playwright/ accepts accessKey=${key%%:*}:*** (HTTP $pw_code)"
+  else
+    echo "FAIL /playwright/ should accept accessKey=${key%%:*}:*** (HTTP $pw_code, want 400/426)" >&2
+    exit 1
+  fi
+done
 
 echo "=== GET $BASE_URL/logs/unknown-session with auth (expect 400 — WS upgrade required) ==="
 logs_code="$(curl_http_code "$BASE_URL/logs/unknown-session" "${AUTH[@]}")"

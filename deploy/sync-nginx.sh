@@ -24,18 +24,37 @@ if [[ "$(id -u)" -ne 0 ]]; then
 fi
 
 HTPASSWD="/etc/nginx/selenoid.htpasswd"
-if [[ ! -f "$HTPASSWD" ]]; then
+# Both WebDriver Basic Auth pairs: students (user1) + public guest (qa_engineer).
+# Public password carries a #; override via env if the SSOT credential rotates.
+STUDENT_USER="${SELENOID_STUDENT_USER:-user1}"
+STUDENT_PASSWORD="${SELENOID_STUDENT_PASSWORD:-1234}"
+PUBLIC_USER="${SELENOID_PUBLIC_USER:-qa_engineer}"
+PUBLIC_PASSWORD="${SELENOID_PUBLIC_PASSWORD:-aAb_-4gs53FD}"
+
+htpasswd_set() {
+  local user="$1" password="$2"
   if command -v htpasswd >/dev/null 2>&1; then
-    htpasswd -cb "$HTPASSWD" user1 1234
+    if [[ -f "$HTPASSWD" ]]; then
+      htpasswd -b "$HTPASSWD" "$user" "$password"
+    else
+      htpasswd -cb "$HTPASSWD" "$user" "$password"
+    fi
   elif command -v openssl >/dev/null 2>&1; then
-    printf 'user1:%s\n' "$(openssl passwd -apr1 1234)" >"$HTPASSWD"
+    local hash
+    hash="$(openssl passwd -apr1 "$password")"
+    touch "$HTPASSWD"
+    sed -i "\|^${user}:|d" "$HTPASSWD"
+    printf '%s:%s\n' "$user" "$hash" >>"$HTPASSWD"
   else
     echo "Missing $HTPASSWD and neither htpasswd nor openssl is available" >&2
     exit 1
   fi
-  chmod 640 "$HTPASSWD"
-  chown root:www-data "$HTPASSWD" 2>/dev/null || chmod 644 "$HTPASSWD"
-fi
+}
+
+htpasswd_set "$STUDENT_USER" "$STUDENT_PASSWORD"
+htpasswd_set "$PUBLIC_USER" "$PUBLIC_PASSWORD"
+chmod 640 "$HTPASSWD"
+chown root:www-data "$HTPASSWD" 2>/dev/null || chmod 644 "$HTPASSWD"
 
 cp "$CONF_SRC" "$TMP"
 

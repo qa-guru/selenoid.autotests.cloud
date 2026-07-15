@@ -11,6 +11,10 @@ UI_VERSION="${SELENOID_UI_VERSION:-v2.3.0}"
 CM_VERSION="${CM_VERSION:-v2.3.0}"
 VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
 GITHUB_OWNER="${GITHUB_OWNER:-qa-guru}"
+PLAYWRIGHT_PUBLIC_KEY_DEFAULT='qa_engineer:aAb_-4gs53FD'
+PLAYWRIGHT_STUDENT_ACCESS_KEY="${PLAYWRIGHT_STUDENT_ACCESS_KEY:-user1:1234}"
+PLAYWRIGHT_PUBLIC_ACCESS_KEY="${PLAYWRIGHT_PUBLIC_ACCESS_KEY:-$PLAYWRIGHT_PUBLIC_KEY_DEFAULT}"
+PLAYWRIGHT_ACCESS_KEYS="${PLAYWRIGHT_ACCESS_KEYS:-${PLAYWRIGHT_STUDENT_ACCESS_KEY},${PLAYWRIGHT_PUBLIC_ACCESS_KEY}}"
 version_args=()
 if [[ -n "$VERSION" ]]; then
   version_args=(-v "$VERSION")
@@ -101,6 +105,11 @@ docker pull "${VIDEO_RECORDER_IMAGE}"
 mkdir -p "$CONFIG_DIR/video" "$CONFIG_DIR/logs"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cat >"${CONFIG_DIR}/playwright-access.env" <<EOF
+PLAYWRIGHT_ACCESS_KEYS='${PLAYWRIGHT_ACCESS_KEYS}'
+PLAYWRIGHT_PUBLIC_ACCESS_KEY='${PLAYWRIGHT_PUBLIC_ACCESS_KEY}'
+EOF
+chmod 640 "${CONFIG_DIR}/playwright-access.env"
 install -m 755 "${SCRIPT_DIR}/cleanup-videos.sh" "${CONFIG_DIR}/bin/cleanup-videos.sh"
 install -m 755 "${SCRIPT_DIR}/video-retention.sh" "${CONFIG_DIR}/bin/video-retention.sh"
 
@@ -116,7 +125,10 @@ unset DOCKER_API_VERSION || true
 docker stop selenoid 2>/dev/null || true
 docker rm selenoid 2>/dev/null || true
 
-HUB_UNIT_SRC="${HUB_UNIT_SRC:-/tmp/selenoid-hub.service}"
+HUB_UNIT_SRC="${HUB_UNIT_SRC:-${SCRIPT_DIR}/selenoid-hub.service}"
+if [[ ! -f "$HUB_UNIT_SRC" && -f /tmp/selenoid-hub.service ]]; then
+  HUB_UNIT_SRC=/tmp/selenoid-hub.service
+fi
 HUB_UNIT_DEST="/etc/systemd/system/selenoid-hub.service"
 hub_via_systemd=false
 if [[ -f "$HUB_UNIT_SRC" ]] && sudo -n true 2>/dev/null; then
@@ -152,6 +164,7 @@ if [[ "$hub_via_systemd" != true ]]; then
     -video-output-dir "${CONFIG_DIR}/video/" \
     -video-recorder-image "${VIDEO_RECORDER_IMAGE}" \
     -log-output-dir "${CONFIG_DIR}/logs/" \
+    -playwright-access-key="${PLAYWRIGHT_ACCESS_KEYS}" \
     -listen :4444 \
     >> "${CONFIG_DIR}/logs/selenoid.log" 2>&1 &
 fi
@@ -181,6 +194,7 @@ docker run -d --name selenoid-ui \
   "$UI_IMAGE" \
     -selenoid-uri=http://127.0.0.1:4444 \
     -browsers-conf=/etc/selenoid/browsers.json \
+    -playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}" \
     -listen=:8080
 
 echo "=== local hub status ==="

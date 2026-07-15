@@ -15,15 +15,17 @@ Group=docker
 Environment=TZ=Local
 # Do NOT pin DOCKER_API_VERSION: the moby client auto-negotiates with the
 # engine (Docker Engine 29.x → API 1.55). Pinning 1.45 is stale.
+EnvironmentFile=-/opt/selenoid/playwright-access.env
 ExecStartPre=/bin/sh -c 'docker network inspect selenoid >/dev/null 2>&1 || docker network create selenoid'
-ExecStart=/opt/selenoid/bin/selenoid \
+ExecStart=/bin/bash -c 'exec /opt/selenoid/bin/selenoid \
   -conf /opt/selenoid/browsers.json \
   -limit 20 \
   -container-network selenoid \
   -video-output-dir /opt/selenoid/video/ \
   -video-recorder-image qaguru/video-recorder:latest \
   -log-output-dir /opt/selenoid/logs/ \
-  -listen :4444
+  -playwright-access-key="${PLAYWRIGHT_ACCESS_KEYS}" \
+  -listen :4444'
 Restart=always
 RestartSec=5
 TimeoutStopSec=30
