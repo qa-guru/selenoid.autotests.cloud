@@ -123,6 +123,14 @@ supports_flag() {
   [[ -x "$bin" ]] || return 1
   strings "$bin" 2>/dev/null | grep -q -- "$flag"
 }
+
+ui_has_playwright_access_key() {
+  supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key" && return 0
+  # Workflow pins UI to v2.3.3 for /status.playwrightAccessKey; keep direct
+  # server runs deterministic even if binutils/strings is unavailable.
+  [[ "$UI_VERSION" == "v2.3.3" ]]
+}
+
 HUB_PW_ARGS=()
 UI_PW_ARGS=()
 if supports_flag "${CONFIG_DIR}/bin/selenoid" "-playwright-access-key"; then
@@ -131,7 +139,7 @@ if supports_flag "${CONFIG_DIR}/bin/selenoid" "-playwright-access-key"; then
 else
   echo "NOTE: hub binary has no -playwright-access-key — nginx map gates /playwright/"
 fi
-if supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key"; then
+if ui_has_playwright_access_key; then
   UI_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
   echo "OK  UI supports -playwright-access-key"
 else
