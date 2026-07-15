@@ -126,9 +126,9 @@ supports_flag() {
 
 ui_has_playwright_access_key() {
   supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key" && return 0
-  # Workflow pins UI to v2.3.3 for /status.playwrightAccessKey; keep direct
+  # Workflow pins UI to v2.3.4 for /status.playwrightAccessKey; keep direct
   # server runs deterministic even if binutils/strings is unavailable.
-  [[ "$UI_VERSION" == "v2.3.3" ]]
+  [[ "$UI_VERSION" == "v2.3.4" ]]
 }
 
 HUB_PW_ARGS=()
