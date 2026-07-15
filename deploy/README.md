@@ -39,7 +39,7 @@
 | API | students | public guest |
 |-----|----------|--------------|
 | WebDriver `/wd/hub` (Basic Auth) | `user1` / `1234` | `qa_engineer` / `aAb_-4gs53FD` |
-| Playwright `/playwright/` (query `accessKey`) | `user1:1234` | `qa_engineer:aAb_-4gs53FD` (`#` → `%23` в URL) |
+| Playwright `/playwright/` (query `accessKey`) | `user1:1234` | `qa_engineer:aAb_-4gs53FD` (`:` → `%3A` в URL) |
 
 WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (обоих пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query, т.к. браузерный WS не умеет Basic Auth: hub-ключи в `/opt/selenoid/playwright-access.env` → `-playwright-access-key` (systemd); UI получает public key через свой flag → Create Session / сниппеты подставляют его из `/status.playwrightAccessKey`.
 
@@ -129,7 +129,7 @@ SELENOID_VERSION=v2.3.0 SELENOID_UI_VERSION=v2.3.0 CM_VERSION=v2.3.0 ./deploy/de
 ```bash
 ./deploy/smoke-remote.sh https://selenoid.autotests.cloud
 # hub revision assertion (default EXPECTED_HUB_VERSION=v2.3.0):
-# curl -u user1:1234 -fsSL …/wd/hub/status | jq -r .value.message
+# curl -u qa_engineer:'aAb_-4gs53FD' -fsSL …/wd/hub/status | jq -r .value.message
 ```
 
 ---

@@ -8,8 +8,8 @@ if [[ -z "$BASE_URL" ]]; then
   exit 1
 fi
 BASE_URL="${BASE_URL%/}"
-SELENOID_USER="${SELENOID_USER:-user1}"
-SELENOID_PASSWORD="${SELENOID_PASSWORD:-1234}"
+SELENOID_USER="${SELENOID_USER:-qa_engineer}"
+SELENOID_PASSWORD="${SELENOID_PASSWORD:-aAb_-4gs53FD}"
 AUTH=(-u "${SELENOID_USER}:${SELENOID_PASSWORD}")
 PLAYWRIGHT_PUBLIC_KEY_DEFAULT='qa_engineer:aAb_-4gs53FD'
 PLAYWRIGHT_STUDENT_ACCESS_KEY="${PLAYWRIGHT_STUDENT_ACCESS_KEY:-user1:1234}"
@@ -75,6 +75,14 @@ for pair in "chrome:149.0" "firefox:151.0" "msedge:145.0" "playwright-chromium:1
     exit 1
   fi
 done
+
+status_playwright_key="$(jq -r '.playwrightAccessKey // empty' <<<"$status_json")"
+if [[ "$status_playwright_key" == "$PLAYWRIGHT_PUBLIC_ACCESS_KEY" ]]; then
+  echo "OK  /status.playwrightAccessKey matches public guest SSOT"
+else
+  echo "FAIL /status.playwrightAccessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_playwright_key:-<empty>}" >&2
+  exit 1
+fi
 
 echo "=== GET $BASE_URL/ (UI, no auth) ==="
 ui_code="$(curl_http_code "$BASE_URL/")"

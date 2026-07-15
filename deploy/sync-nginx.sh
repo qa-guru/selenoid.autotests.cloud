@@ -25,7 +25,6 @@ fi
 
 HTPASSWD="/etc/nginx/selenoid.htpasswd"
 # Both WebDriver Basic Auth pairs: students (user1) + public guest (qa_engineer).
-# Public password carries a #; override via env if the SSOT credential rotates.
 STUDENT_USER="${SELENOID_STUDENT_USER:-user1}"
 STUDENT_PASSWORD="${SELENOID_STUDENT_PASSWORD:-1234}"
 PUBLIC_USER="${SELENOID_PUBLIC_USER:-qa_engineer}"
