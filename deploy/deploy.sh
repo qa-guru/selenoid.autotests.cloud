@@ -121,7 +121,7 @@ done
 supports_flag() {
   local bin="$1" flag="$2"
   [[ -x "$bin" ]] || return 1
-  "$bin" -help 2>&1 | grep -q -- "$flag"
+  strings "$bin" 2>/dev/null | grep -q -- "$flag"
 }
 HUB_PW_ARGS=()
 UI_PW_ARGS=()

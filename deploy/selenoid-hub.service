@@ -24,7 +24,6 @@ ExecStart=/bin/bash -c 'exec /opt/selenoid/bin/selenoid \
   -video-output-dir /opt/selenoid/video/ \
   -video-recorder-image qaguru/video-recorder:latest \
   -log-output-dir /opt/selenoid/logs/ \
-  -playwright-access-key="${PLAYWRIGHT_ACCESS_KEYS}" \
   -listen :4444'
 Restart=always
 RestartSec=5
