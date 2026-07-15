@@ -41,8 +41,19 @@ jobs:
             echo "ref=main" >> "$GITHUB_OUTPUT"
           fi
 
-      # Deploy user is selenoid@ (not qaguru) — GHA secrets SELENOID_DEPLOY_*.
-      # sudoers allow exact /tmp paths; stage under $HOME then install atomically.
+      # Deploy user stays selenoid@ (canon ops user qaguru is for interactive SSH only).
+      # Copy from checkout — do not curl raw.githubusercontent.com (CDN can serve stale deploy.sh).
+      - name: Upload deploy scripts
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SELENOID_DEPLOY_HOST }}
+          username: ${{ secrets.SELENOID_DEPLOY_USER }}
+          key: ${{ secrets.SELENOID_DEPLOY_KEY }}
+          source: "deploy/deploy.sh,deploy/sync-nginx.sh,deploy/nginx-selenoid.conf,deploy/browsers-production.json,deploy/selenoid-hub.service,deploy/cleanup-videos.sh,deploy/video-retention.sh"
+          target: ".selenoid-deploy"
+          strip_components: 1
+          overwrite: true
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.5
         with:
@@ -63,19 +74,9 @@ jobs:
             export SELENOID_CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
             export CM_BIN="$HOME/cm"
             STAGING="$HOME/.selenoid-deploy"
-            REPO="qa-guru/selenoid.autotests.cloud"
-            REF="${{ steps.meta.outputs.ref }}"
-            mkdir -p "$STAGING"
-            # Download into selenoid-owned staging first — shared /tmp may be owned by qaguru.
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/nginx-selenoid.conf" -o "$STAGING/nginx-selenoid.conf"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/sync-nginx.sh" -o "$STAGING/sync-nginx.sh"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/browsers-production.json" -o "$STAGING/browsers-production.json"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/selenoid-hub.service" -o "$STAGING/selenoid-hub.service"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/deploy.sh" -o "$STAGING/deploy-selenoid.sh"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/cleanup-videos.sh" -o "$STAGING/cleanup-videos.sh"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/video-retention.sh" -o "$STAGING/video-retention.sh"
-            chmod +x "$STAGING/sync-nginx.sh" "$STAGING/deploy-selenoid.sh" "$STAGING/cleanup-videos.sh" "$STAGING/video-retention.sh"
-            # sudoers paths are /tmp/* — replace atomically so another user cannot block writes.
+            test -x "$STAGING/deploy.sh"
+            chmod +x "$STAGING/deploy.sh" "$STAGING/sync-nginx.sh" "$STAGING/cleanup-videos.sh" "$STAGING/video-retention.sh"
+            # sudoers paths are /tmp/* — install atomically from selenoid-owned staging.
             install -m 644 "$STAGING/nginx-selenoid.conf" /tmp/nginx-selenoid.conf
             install -m 755 "$STAGING/sync-nginx.sh" /tmp/sync-nginx.sh
             install -m 644 "$STAGING/selenoid-hub.service" /tmp/selenoid-hub.service
@@ -87,7 +88,9 @@ jobs:
             export SELENOID_UI_VERSION=v2.3.0
             export CM_VERSION=v2.3.0
             export GIT_REVISION="${GIT_REVISION:-v2.3.0}"
-            bash "$STAGING/deploy-selenoid.sh"
+            # Prove we are on the optional-flag deploy.sh (not a stale curl cache).
+            grep -q supports_flag "$STAGING/deploy.sh"
+            bash "$STAGING/deploy.sh"
 
       - name: Smoke test (public)
         env:
