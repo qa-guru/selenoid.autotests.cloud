@@ -121,14 +121,20 @@ done
 supports_flag() {
   local bin="$1" flag="$2"
   [[ -x "$bin" ]] || return 1
-  strings "$bin" 2>/dev/null | grep -q -- "$flag"
+  # Go flag.String names are embedded without leading dashes (e.g. playwright-access-key).
+  local needle="${flag#--}"
+  needle="${needle#-}"
+  strings "$bin" 2>/dev/null | grep -qF -- "$needle"
 }
 
 ui_has_playwright_access_key() {
   supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key" && return 0
-  # Workflow pins UI to v2.3.6 for /status.playwrightAccessKey; keep direct
-  # server runs deterministic even if binutils/strings is unavailable.
-  [[ "$UI_VERSION" == "v2.3.6" ]]
+  # v2.3.6+ exposes /status.playwrightAccessKey; keep direct server runs deterministic
+  # even if binutils/strings is unavailable.
+  case "$UI_VERSION" in
+    v2.3.[6-9]|v2.3.[1-9][0-9]*|v2.[4-9]*|v[3-9]*) return 0 ;;
+  esac
+  return 1
 }
 
 HUB_PW_ARGS=()

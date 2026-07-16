@@ -80,8 +80,17 @@ status_playwright_key="$(jq -r '.playwrightAccessKey // empty' <<<"$status_json"
 if [[ "$status_playwright_key" == "$PLAYWRIGHT_PUBLIC_ACCESS_KEY" ]]; then
   echo "OK  /status.playwrightAccessKey matches public guest SSOT"
 elif [[ -z "$status_playwright_key" ]]; then
-  # v2.3.0 UI binary has no -playwright-access-key; nginx map still gates /playwright/.
-  echo "WARN /status.playwrightAccessKey empty (UI binary without flag) — nginx accessKey checks below"
+  # Pre-v2.3.6 UI had no -playwright-access-key; nginx map still gates /playwright/.
+  # v2.3.6+ must expose the public key (Create Session + snippets).
+  ui_minor_ok=false
+  case "${SELENOID_UI_VERSION:-${EXPECTED_UI_VERSION:-}}" in
+    v2.3.[6-9]|v2.3.[1-9][0-9]*|v2.[4-9]*|v[3-9]*) ui_minor_ok=true ;;
+  esac
+  if [[ "$ui_minor_ok" == true ]]; then
+    echo "FAIL /status.playwrightAccessKey empty — UI must run with -playwright-access-key" >&2
+    exit 1
+  fi
+  echo "WARN /status.playwrightAccessKey empty (legacy UI without flag) — nginx accessKey checks below"
 else
   echo "FAIL /status.playwrightAccessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_playwright_key}" >&2
   exit 1
@@ -95,6 +104,28 @@ else
   echo "FAIL UI should be public without credentials (HTTP $ui_code)" >&2
   exit 1
 fi
+
+echo "=== UI bundle: no free playwrightAccessKey (Create Session ReferenceError) ==="
+# Half-wired builds call playwrightEndpoint(..., playwrightAccessKey) from Launch
+# without declaring/passing the prop → Uncaught ReferenceError in the browser.
+ui_html="$(curl_retry "$BASE_URL/" -fsSL)"
+ui_asset="$(printf '%s' "$ui_html" | sed -n 's/.*src="\([^"]*\/assets\/index-[^"]*\.js\)".*/\1/p' | head -1)"
+if [[ -z "$ui_asset" ]]; then
+  echo "FAIL could not locate UI index-*.js asset in /" >&2
+  exit 1
+fi
+ui_js_url="$BASE_URL${ui_asset}"
+# Absolute asset paths only; reject protocol-relative / external URLs.
+if [[ "$ui_asset" != /* ]]; then
+  ui_js_url="$BASE_URL/$ui_asset"
+fi
+ui_js="$(curl_retry "$ui_js_url" -fsSL)"
+if printf '%s' "$ui_js" | grep -qE '[, (]playwrightAccessKey\)'; then
+  echo "FAIL UI bundle passes free variable playwrightAccessKey into a call (Create Session will throw)" >&2
+  echo "     asset: $ui_js_url" >&2
+  exit 1
+fi
+echo "OK  UI bundle has no free playwrightAccessKey call arg ($ui_asset)"
 
 echo "=== GET $BASE_URL/wd/hub/status without auth (expect 401) ==="
 wd_no_auth="$(curl_http_code "$BASE_URL/wd/hub/status")"
